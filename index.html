@@ -39,7 +39,8 @@
     user-select: none;
     -webkit-user-select: none;
   }
-  #stage { position: relative; width: 100%; height: 100%; overflow: hidden; touch-action: manipulation; }
+  /* dvh = the area actually visible between the phone browser's toolbars */
+  #stage { position: relative; width: 100%; height: 100%; height: 100dvh; overflow: hidden; touch-action: manipulation; }
   canvas#scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
   button { font: inherit; cursor: pointer; }
@@ -72,25 +73,33 @@
   /* a flat, letterpress-style poster pasted on the tiles */
   .cartel {
     position: relative; max-width: 680px; min-height: 100%; margin: 0 auto;
-    display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
     background: var(--rosa); border: 3px solid var(--tinta);
     box-shadow: inset 0 0 0 6px var(--rosa), inset 0 0 0 8px var(--papel), 6px 6px 0 rgba(35,26,21,.35);
-    padding: 14px 12px 24px;
+    padding: 14px 12px 20px;
   }
   .picado { width: 100%; height: 44px; flex: none; }
   .poster-eyebrow {
-    font-family: var(--display); font-size: clamp(11px, 2.8vw, 14px); letter-spacing: .18em;
+    font-family: var(--display); font-size: clamp(11px, 2.8vw, 14px); letter-spacing: .12em;
     color: var(--papel); background: var(--tinta); padding: 5px 12px; text-transform: uppercase;
   }
   .poster-title {
     font-family: var(--shade); color: var(--amarillo);
-    font-size: clamp(40px, 12vw, 96px); line-height: .92; margin: 4px 0 0;
+    font-size: clamp(34px, min(12vw, 8dvh), 96px); line-height: .92; margin: 2px 0 0;
     text-shadow: 4px 4px 0 var(--tinta);
     text-wrap: balance;
   }
   .bout { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; width: min(100%, 640px); }
   .fighter { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
-  .fighter canvas { width: min(33vw, 210px); height: min(33vw, 210px); }
+  .fighter canvas { width: min(33vw, 210px, 22dvh); height: min(33vw, 210px, 22dvh); }
+  /* the start button stays on screen even when the poster is taller than the phone */
+  .cta { position: sticky; bottom: 10px; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 4px; }
+  .silent-note {
+    display: inline-flex; align-items: center; gap: 6px; margin: 0; max-width: 100%;
+    font-size: 13px; font-weight: 800; color: var(--tinta); background: var(--papel);
+    border: 2px solid var(--tinta); border-radius: 999px; padding: 4px 12px 4px 8px;
+  }
+  .silent-note svg { width: 18px; height: 18px; flex: none; }
   .fighter-name { font-family: var(--display); font-size: clamp(14px, 4vw, 24px); line-height: 1.05; color: var(--papel); text-shadow: 2px 2px 0 var(--tinta); }
   .fighter-tag { font-size: clamp(11px, 2.8vw, 13px); font-weight: 600; color: var(--tinta); background: var(--amarillo); padding: 2px 8px; border-radius: 3px; }
   .vs { font-family: var(--display); font-size: clamp(28px, 8vw, 54px); color: var(--turquesa); text-shadow: 3px 3px 0 var(--tinta); transform: rotate(-8deg); }
@@ -99,7 +108,17 @@
     background: var(--papel); border: 3px solid var(--tinta); padding: 10px 14px; width: min(100%, 520px);
   }
   .billing b { color: var(--rosa); font-weight: 400; }
-  .howto { max-width: 46ch; font-size: 15px; line-height: 1.45; color: var(--papel); font-weight: 600; text-wrap: balance; }
+  .howto { max-width: 46ch; font-size: 15px; line-height: 1.45; color: var(--papel); font-weight: 600; text-wrap: balance; margin: 0; }
+  /* shorter phones: tighten the poster so the whole thing fits without scrolling */
+  @media (max-height: 720px) {
+    .picado { height: 32px; }
+    .poster-title { font-size: clamp(30px, min(10.5vw, 7.5dvh), 60px); }
+    .fighter-name { font-size: clamp(13px, 3.6vw, 18px); }
+    .billing { padding: 6px 10px; line-height: 1.4; }
+  }
+  @media (max-height: 600px) {
+    .howto, .fighter-tag { display: none; }
+  }
 
   /* ---------- Announcer ---------- */
   #announce { justify-content: center; pointer-events: auto; background: rgba(35,26,21,.55); padding-inline: 16px; }
@@ -119,7 +138,7 @@
   .bar i { display: block; height: 100%; width: 100%; transform-origin: left; transition: transform .25s ease; }
   #hp i { background: repeating-linear-gradient(-45deg, var(--rosa) 0 8px, var(--rosa-deep) 8px 16px); }
   #love i { background: linear-gradient(90deg, #ff6fa9, var(--rosa)); transform: scaleX(0); }
-  #super-wrap { grid-column: 1 / -1; justify-self: center; width: min(70%, 360px); }
+  #super-wrap { grid-column: 1 / -1; grid-row: 2; justify-self: center; width: min(62%, 360px); }
   #super i { background: linear-gradient(90deg, var(--turquesa), var(--amarillo)); transform: scaleX(0); transition: transform .12s linear; }
   #super-wrap.ready .bar { box-shadow: 0 0 0 3px var(--amarillo), 0 0 22px var(--amarillo); animation: pulse .5s ease-in-out infinite alternate; }
   @keyframes pulse { to { box-shadow: 0 0 0 3px var(--rosa), 0 0 30px var(--rosa); } }
@@ -130,13 +149,27 @@
     border: 2px solid var(--tinta); padding: 4px 8px; border-radius: 3px; box-shadow: 3px 3px 0 var(--tinta);
     font-variant-numeric: tabular-nums;
   }
-  /* only offered on the finale: during the fight every tap is a punch, and a stray one used to mute the game */
-  #sound {
-    position: absolute; z-index: 9; right: 16px; bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-    font-family: var(--display); font-size: 12px; color: var(--tinta); background: var(--papel);
-    border: 2px solid var(--tinta); border-radius: 3px; padding: 6px 10px; box-shadow: 3px 3px 0 var(--tinta);
+  /* sound on/off: in the fight it sits up in the meter band, away from where people tap to punch */
+  .sound-toggle {
+    width: 36px; height: 36px; padding: 0; display: inline-grid; place-items: center;
+    color: var(--tinta); background: var(--papel); border: 2px solid var(--tinta); border-radius: 50%;
+    box-shadow: 2px 2px 0 var(--tinta);
   }
-  .soundhint { font-family: var(--display); font-size: 12px; letter-spacing: .04em; color: var(--papel); margin: 2px 0 0; }
+  .sound-toggle svg { width: 20px; height: 20px; }
+  .sound-toggle .x, .sound-toggle.off .wave { display: none; }
+  .sound-toggle.off .x { display: inline; }
+  .sound-toggle.off { background: var(--amarillo); }
+  #sound-hud { grid-row: 2; grid-column: 2; justify-self: end; align-self: end; pointer-events: auto; }
+  #sound-finale { position: absolute; z-index: 9; top: 14px; right: 14px; }
+  #scrollcue {
+    position: absolute; z-index: 9; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--display); font-size: 14px; color: var(--tinta); background: var(--amarillo);
+    border: 3px solid var(--tinta); border-radius: 999px; padding: 8px 16px; box-shadow: 4px 4px 0 var(--tinta);
+    transform: translateX(-50%); animation: nudge 1.4s ease-in-out infinite;
+  }
+  #scrollcue svg { width: 14px; height: 14px; flex: none; }
+  @keyframes nudge { 50% { transform: translate(-50%, 6px); } }
   #tapnote {
     position: absolute; z-index: 4; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
     font-family: var(--display); font-size: clamp(12px, 3.2vw, 15px); color: var(--amarillo); text-shadow: 2px 2px 0 var(--tinta);
@@ -158,7 +191,7 @@
   /* ---------- Finale ---------- */
   #finale .cartel { gap: 18px; padding-bottom: 64px; }
   .ganadora { font-family: var(--shade); color: var(--amarillo); font-size: clamp(38px, 11vw, 88px); line-height: .95; margin: 6px 0 0; text-shadow: 4px 4px 0 var(--tinta); }
-  .champ { position: relative; width: min(78vw, 340px); flex: none; margin-top: 6px; }
+  .champ { position: relative; width: min(78vw, 340px, 40dvh); flex: none; margin-top: 6px; }
   .champ img { width: 100%; display: block; border: 6px solid var(--papel); box-shadow: 8px 8px 0 var(--tinta); transform: rotate(-2deg); }
   .belt {
     position: absolute; left: 50%; bottom: -22px; transform: translateX(-50%) rotate(2deg);
@@ -190,7 +223,7 @@
   #lightbox p { position: absolute; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; text-align: center; font-family: var(--display); font-size: 13px; color: var(--papel); }
 
   @media (prefers-reduced-motion: reduce) {
-    #tapnote, #super-wrap.ready .bar { animation: none; }
+    #tapnote, #super-wrap.ready .bar, #scrollcue { animation: none; }
   }
 </style>
 </head>
@@ -202,6 +235,7 @@
     <div class="meter"><div class="meter-label"><span>El Piñatón</span><span id="hp-num">42 / 42</span></div><div class="bar" id="hp"><i></i></div></div>
     <div class="meter"><div class="meter-label"><span>Cariñómetro</span><span id="love-num">0 %</span></div><div class="bar" id="love"><i></i></div></div>
     <div class="meter" id="super-wrap"><div class="meter-label"><span id="super-label">Supertante-måler</span><span></span></div><div class="bar" id="super"><i></i></div></div>
+    <button class="sound-toggle" id="sound-hud" type="button" aria-label="Skru av lyden" title="Skru av lyden"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7.5h3l4.2-3.5v12L6 12.5H3z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path class="wave" d="M13 7.3a3.6 3.6 0 0 1 0 5.4M15.4 5a7 7 0 0 1 0 10"/><path class="x" d="M13.2 7.6l4.6 4.8M17.8 7.6l-4.6 4.8"/></g></svg></button>
   </div>
   <div id="album" hidden>Minner 0 / 25</div>
   <div id="tapnote" hidden>Trykk for å slå!</div>
@@ -211,7 +245,7 @@
   <section class="screen wall" id="poster">
    <div class="cartel">
     <canvas class="picado" id="picado1" aria-hidden="true"></canvas>
-    <div class="poster-eyebrow">Parque México · Foro Lindbergh · Función única</div>
+    <div class="poster-eyebrow">Parque México · Foro Lindbergh</div>
     <h1 class="poster-title">¡Lucha de Piñata!</h1>
     <div class="bout">
       <div class="fighter">
@@ -226,10 +260,12 @@
         <div class="fighter-tag">Full av minner</div>
       </div>
     </div>
-    <div class="billing">Lucha estelar a <b>42 golpes</b> · Entrada: <b>42 tacos</b><br>Med heiagjeng: <b>Helmer &amp; Åsta</b></div>
-    <p class="howto">Trykk på skjermen (eller mellomrom) for å slå. Slår du raskt, fylles Supertante-måleren, og da kommer et supertrekk.</p>
-    <button class="btn" id="start">¡A luchar!</button>
-    <p class="soundhint">Best med lyden på</p>
+    <div class="billing"><b>42 golpes</b> · Entrada: <b>42 tacos</b><br>Heiagjeng: <b>Helmer &amp; Åsta</b></div>
+    <p class="howto">Trykk på skjermen for å slå. Slår du raskt, kommer et supertrekk.</p>
+    <div class="cta">
+      <button class="btn" id="start">¡A luchar!</button>
+      <p class="silent-note"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7.5h3l4.2-3.5v12L6 12.5H3z" fill="currentColor"/><path d="M13 7.3a3.6 3.6 0 0 1 0 5.4M15.4 5a7 7 0 0 1 0 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Slå av lydløs for å høre musikken</p>
+    </div>
    </div>
   </section>
 
@@ -264,7 +300,8 @@
   </section>
 
   <div id="lightbox" hidden><img alt=""><p>Trykk for å lukke</p></div>
-  <button id="sound" hidden aria-pressed="true">Lyd: på</button>
+  <button class="sound-toggle" id="sound-finale" type="button" hidden aria-label="Skru av lyden" title="Skru av lyden"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7.5h3l4.2-3.5v12L6 12.5H3z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path class="wave" d="M13 7.3a3.6 3.6 0 0 1 0 5.4M15.4 5a7 7 0 0 1 0 10"/><path class="x" d="M13.2 7.6l4.6 4.8M17.8 7.6l-4.6 4.8"/></g></svg></button>
+  <button id="scrollcue" type="button" hidden>Bla ned<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 4.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 </div>
 
 <script>
@@ -751,14 +788,17 @@
       ss.speak(u);
     } catch (e) {}
   }
+  const soundButtons = document.querySelectorAll(".sound-toggle");
   function setSound(on) {
     audio.on = on;
-    $("sound").textContent = on ? "Lyd: på" : "Lyd: av";
-    $("sound").setAttribute("aria-pressed", String(on));
+    soundButtons.forEach((b) => {
+      const label = on ? "Skru av lyden" : "Skru på lyden";
+      b.classList.toggle("off", !on); b.setAttribute("aria-label", label); b.title = label;
+    });
     if (audio.master) audio.master.gain.value = on ? 0.9 : 0;
     if (!on) { try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {} }
   }
-  $("sound").addEventListener("click", (e) => { e.stopPropagation(); setSound(!audio.on); });
+  soundButtons.forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); setSound(!audio.on); }));
 
   // ---------------------------------------------------------------- game state
   const MAX_HP = 42;
@@ -953,7 +993,7 @@
   function startIntro() {
     initAudio();
     resetGame();
-    $("poster").hidden = true; $("finale").hidden = true; $("sound").hidden = true;
+    $("poster").hidden = true; $("finale").hidden = true; $("sound-finale").hidden = true; $("scrollcue").hidden = true;
     state = "intro";
     const lines = [
       ["¡Damas y caballeros!", "Damas y caballeros"],
@@ -996,13 +1036,27 @@
   }
   function showFinale() {
     state = "finale";
-    $("sound").hidden = false;
+    $("sound-finale").hidden = false;
     $("hud").hidden = true; $("album").hidden = true; $("tapnote").hidden = true;
     const f = $("finale"); f.hidden = false; f.scrollTop = 0;
     drawPicado($("picado2"));
     buildGallery();
     sing();
+    requestAnimationFrame(updateCue);
   }
+  // The finale is taller than a phone: point out that the message and the photos are further down.
+  const finaleEl = $("finale");
+  function updateCue() {
+    const more = finaleEl.scrollHeight - finaleEl.clientHeight - finaleEl.scrollTop > 80;
+    $("scrollcue").hidden = state !== "finale" || finaleEl.scrollTop > 60 || !more;
+  }
+  function showMessage() {
+    finaleEl.querySelector(".love-card").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+  }
+  finaleEl.addEventListener("scroll", updateCue, { passive: true });
+  finaleEl.querySelector(".champ img").addEventListener("load", updateCue);
+  window.addEventListener("resize", updateCue);
+  $("scrollcue").addEventListener("click", showMessage);
   function sing() {
     $("lyric").textContent = "";
     playSong(CUMPLE, {
@@ -1010,7 +1064,11 @@
         const el = $("lyric"); el.textContent = txt;
         el.animate([{ transform: "translateY(8px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 300, easing: "ease-out" });
       },
-      onEnd: () => { sfx.cheer(2.4, 0.3); setTimeout(() => state === "finale" && playSong(CUCARACHA, { loop: true }), 2200); }
+      onEnd: () => {
+        sfx.cheer(2.4, 0.3);
+        if (state === "finale" && finaleEl.scrollTop < 30) showMessage(); // glide down to the message once the song is over
+        setTimeout(() => state === "finale" && playSong(CUCARACHA, { loop: true }), 2200);
+      }
     });
   }
   function buildGallery() {
