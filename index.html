@@ -606,10 +606,15 @@
   }
 
   // ---------------------------------------------------------------- audio
-  const audio = { ctx: null, master: null, music: null, sfx: null, on: true, song: null, voice: null };
+  // The music is rendered once, offline, into a sound in memory and played back as one looping sound.
+  // That is far lighter for a phone than synthesising every note live, and it keeps going on its own.
+  const audio = { ctx: null, master: null, music: null, sfx: null, on: true, song: null, sessionSet: false };
   function initAudio() {
-    // play like a video, so an iPhone on silent still plays the music
-    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+    if (!audio.sessionSet) {
+      audio.sessionSet = true;
+      // play like a video, so an iPhone on silent can still play the music
+      try { if (navigator.audioSession && navigator.audioSession.type !== "playback") navigator.audioSession.type = "playback"; } catch (e) {}
+    }
     if (audio.ctx) {
       if (audio.ctx.state !== "running" && audio.ctx.state !== "closed") audio.ctx.resume().catch(() => {});
       return;
@@ -617,98 +622,119 @@
     try {
       const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
       const a = new AC(); audio.ctx = a;
-      audio.master = a.createGain(); audio.master.gain.value = 0.9; audio.master.connect(a.destination);
+      audio.master = a.createGain(); audio.master.gain.value = audio.on ? 0.9 : 0; audio.master.connect(a.destination);
       const comp = a.createDynamicsCompressor(); comp.connect(audio.master);
-      audio.music = a.createGain(); audio.music.gain.value = 0.55; audio.music.connect(comp);
-      audio.sfx = a.createGain(); audio.sfx.gain.value = 0.8; audio.sfx.connect(comp);
+      audio.music = a.createGain(); audio.music.gain.value = 0.6; audio.music.connect(comp);
+      audio.sfx = a.createGain(); audio.sfx.gain.value = 0.7; audio.sfx.connect(comp);
       const len = a.sampleRate * 1.5, buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       audio.noise = buf;
     } catch (e) { audio.ctx = null; }
   }
-  // Phones can pause web audio (the announcer's voice, a notification, locking the screen).
-  // Any tap or key brings it back; taps must be events the browser counts as a user gesture.
+  // Phones can pause web audio (a notification, a call, locking the screen). Any tap or key brings it back;
+  // taps must be events the browser counts as a user gesture.
   ["touchend", "pointerup", "click", "keydown"].forEach((ev) => window.addEventListener(ev, () => { if (audio.ctx) initAudio(); }, true));
   document.addEventListener("visibilitychange", () => { if (!document.hidden && audio.ctx) initAudio(); });
+
   const SCALE = [0, 2, 4, 5, 7, 9, 11];
   const deg2midi = (d) => 60 + Math.floor(d / 7) * 12 + SCALE[((d % 7) + 7) % 7];
   const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
   const CHORDS = { C: [48, [60, 64, 67]], G7: [43, [55, 59, 62, 65]], F: [41, [57, 60, 65]], C7: [48, [58, 64, 67]] };
 
-  function trumpet(out, f, t, dur, vol) {
-    const a = audio.ctx, g = a.createGain(), lp = a.createBiquadFilter();
-    lp.type = "lowpass"; lp.frequency.setValueAtTime(900, t); lp.frequency.linearRampToValueAtTime(2600, t + 0.05); lp.frequency.exponentialRampToValueAtTime(1500, t + dur);
-    lp.Q.value = 2;
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.025);
-    g.gain.setValueAtTime(vol * 0.8, t + Math.max(0.03, dur - 0.06)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.05);
-    const vib = a.createOscillator(), vg = a.createGain(); vib.frequency.value = 5.6; vg.gain.setValueAtTime(0, t); vg.gain.linearRampToValueAtTime(f * 0.006, t + Math.min(dur, 0.25)); vib.connect(vg);
-    for (const det of [-5, 6]) {
-      const o = a.createOscillator(); o.type = "sawtooth"; o.frequency.value = f; o.detune.value = det; vg.connect(o.frequency);
-      o.connect(lp); o.start(t); o.stop(t + dur + 0.08);
-    }
-    vib.start(t); vib.stop(t + dur + 0.08);
-    lp.connect(g); g.connect(out);
+  // marimba: a wooden bar is a sine fundamental plus a quiet partial near 4× that fades fast
+  function marimba(c, out, f, t, vol) {
+    const ring = Math.min(1.4, 0.55 + 220 / f);
+    const o1 = c.createOscillator(), g1 = c.createGain(); o1.frequency.value = f;
+    g1.gain.setValueAtTime(0.0001, t); g1.gain.exponentialRampToValueAtTime(vol, t + 0.005); g1.gain.exponentialRampToValueAtTime(0.0001, t + ring);
+    o1.connect(g1); g1.connect(out); o1.start(t); o1.stop(t + ring + 0.02);
+    const o2 = c.createOscillator(), g2 = c.createGain(); o2.frequency.value = f * 3.93;
+    g2.gain.setValueAtTime(0.0001, t); g2.gain.exponentialRampToValueAtTime(vol * 0.22, t + 0.003); g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    o2.connect(g2); g2.connect(out); o2.start(t); o2.stop(t + 0.18);
   }
-  function pluck(out, f, t, vol, decay = 0.22, type = "triangle") {
-    const a = audio.ctx, o = a.createOscillator(), g = a.createGain();
-    o.type = type; o.frequency.value = f;
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
-    o.connect(g); g.connect(out); o.start(t); o.stop(t + decay + 0.02);
+  // soft, nylon-string pluck for the guitar strums and the bass
+  function pluck(c, out, f, t, vol, decay, cutoff) {
+    const o = c.createOscillator(), lp = c.createBiquadFilter(), g = c.createGain();
+    o.type = "triangle"; o.frequency.value = f; lp.type = "lowpass"; lp.frequency.value = cutoff;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+    o.connect(lp); lp.connect(g); g.connect(out); o.start(t); o.stop(t + decay + 0.02);
   }
   // song = { bpm, melody:[[deg,beats]...], bars:[chord...], barStart, beatsPerBar, length, lyrics:[[beat,text]] }
+  function writeSong(c, out, song, t0) {
+    const spb = 60 / song.bpm;
+    let b = 0;
+    for (const [d, beats] of song.melody) {
+      const t = t0 + b * spb, f = mtof(deg2midi(d)), f3 = mtof(deg2midi(d - 2));
+      marimba(c, out, f, t, 0.32);
+      marimba(c, out, f3, t + 0.015, 0.17);                             // second player, a third below
+      if (beats >= 1.5) for (let q = 0.5; q < beats - 0.2; q += 0.25) { // soft tremolo on the long notes
+        marimba(c, out, f, t + q * spb, 0.09); marimba(c, out, f3, t + (q + 0.125) * spb, 0.05);
+      }
+      b += beats;
+    }
+    song.bars.forEach((ch, i) => {
+      const [root, notes] = CHORDS[ch], bt = t0 + (song.barStart + i * song.beatsPerBar) * spb;
+      pluck(c, out, mtof(root), bt, 0.3, 0.9, 420);                     // bass on the downbeat
+      for (let k = 1; k < song.beatsPerBar; k++) {                      // light guitar strums after it
+        notes.forEach((n, j) => pluck(c, out, mtof(n), bt + k * spb + j * 0.02, 0.045, 0.45, 1800));
+      }
+    });
+  }
+  const SR = 44100, rendered = new Map();
+  function renderSong(song) {
+    if (rendered.has(song)) return rendered.get(song);
+    const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const spb = 60 / song.bpm, len = song.length * spb;
+    const job = new Promise((resolve) => {
+      if (!OAC) { resolve(null); return; }
+      const oc = new OAC(1, Math.ceil((len + 2) * SR), SR);
+      const bus = oc.createGain(); bus.connect(oc.destination);
+      writeSong(oc, bus, song, 0.03);
+      oc.oncomplete = (e) => resolve(e.renderedBuffer);
+      const r = oc.startRendering(); if (r && r.then) r.then(resolve, () => resolve(null));
+    }).then((buf) => {
+      if (!buf) return null;
+      const d = buf.getChannelData(0); let peak = 0;
+      for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+      if (peak > 0) for (let i = 0; i < d.length; i++) d[i] *= 0.8 / peak; // same level for every song
+      return { buf, len, spb };
+    });
+    rendered.set(song, job);
+    return job;
+  }
   function playSong(song, { loop = false, onLyric, onEnd } = {}) {
     if (!audio.ctx) return;
     stopSong();
-    const a = audio.ctx, bus = a.createGain(); bus.gain.value = 1; bus.connect(audio.music);
-    const handle = { bus, timers: [], stopped: false };
+    const handle = { timers: [], stopped: false, src: null, bus: null };
     audio.song = handle;
-    const spb = 60 / song.bpm;
-    const schedule = (t0) => {
-      let b = 0;
-      for (const [d, beats] of song.melody) {
-        if (d !== null) {
-          const dur = beats * spb * 0.92;
-          trumpet(bus, mtof(deg2midi(d)), t0 + b * spb, dur, 0.085);
-          trumpet(bus, mtof(deg2midi(d - 2)), t0 + b * spb + 0.008, dur, 0.05); // mariachi third below
-        }
-        b += beats;
+    renderSong(song).then((r) => {
+      if (handle.stopped || !r || !audio.ctx) return;
+      const a = audio.ctx;
+      if (loop && !song.loopBuf) {
+        // fold the ringing tail back onto the start, so the loop joins without a seam
+        const n = Math.round(r.len * SR), out = a.createBuffer(1, n, SR), d = out.getChannelData(0), s = r.buf.getChannelData(0);
+        for (let i = 0; i < n; i++) d[i] = s[i] + (i + n < s.length ? s[i + n] : 0);
+        song.loopBuf = out;
       }
-      song.bars.forEach((ch, i) => {
-        const [root, notes] = CHORDS[ch];
-        const bt = t0 + (song.barStart + i * song.beatsPerBar) * spb;
-        pluck(bus, mtof(root), bt, 0.32, 0.35);                      // guitarrón "oom"
-        for (let k = 1; k < song.beatsPerBar; k++) {                  // vihuela "pah" strums
-          notes.forEach((n, j) => pluck(bus, mtof(n), bt + k * spb + j * 0.012, 0.06, 0.16, "square"));
-        }
-      });
-      if (onLyric && song.lyrics) {
-        song.lyrics.forEach(([beat, txt]) => {
-          const ms = (t0 + beat * spb - a.currentTime) * 1000;
-          handle.timers.push(setTimeout(() => !handle.stopped && onLyric(txt), Math.max(0, ms)));
-        });
-      }
-      const endMs = (t0 + song.length * spb - a.currentTime) * 1000;
-      handle.timers.push(setTimeout(function tick() {
-        if (handle.stopped) return;
-        if (!loop) { onEnd && onEnd(); return; }
-        // while the phone has the audio paused, wait for it instead of piling up loops
-        if (a.state !== "running") { handle.timers.push(setTimeout(tick, 500)); return; }
-        schedule(Math.max(t0 + song.length * spb, a.currentTime + 0.05));
-      }, Math.max(0, endMs - (loop ? 400 : 0))));
-    };
-    schedule(a.currentTime + 0.08);
-    return handle;
+      const src = a.createBufferSource(), bus = a.createGain();
+      src.buffer = loop ? song.loopBuf : r.buf; src.loop = loop;
+      src.connect(bus); bus.connect(audio.music);
+      src.start(a.currentTime + 0.05);
+      handle.src = src; handle.bus = bus;
+      const ms = (beats) => 50 + beats * r.spb * 1000;
+      if (onLyric && song.lyrics) song.lyrics.forEach(([beat, txt]) => handle.timers.push(setTimeout(() => !handle.stopped && onLyric(txt), ms(beat))));
+      if (!loop && onEnd) handle.timers.push(setTimeout(() => !handle.stopped && onEnd(), ms(song.length)));
+    });
   }
   function stopSong() {
     const h = audio.song; if (!h) return;
-    h.stopped = true; h.timers.forEach(clearTimeout);
-    try { const t = audio.ctx.currentTime; h.bus.gain.setValueAtTime(h.bus.gain.value, t); h.bus.gain.linearRampToValueAtTime(0, t + 0.3); setTimeout(() => h.bus.disconnect(), 600); } catch (e) {}
-    audio.song = null;
+    h.stopped = true; h.timers.forEach(clearTimeout); audio.song = null;
+    if (!h.src) return;
+    try { const t = audio.ctx.currentTime; h.bus.gain.setValueAtTime(1, t); h.bus.gain.linearRampToValueAtTime(0, t + 0.4); h.src.stop(t + 0.45); } catch (e) {}
   }
 
-  // La Cucaracha (traditional) — 3/4 with a pickup; degrees in C major (0 = C4)
+  // La Cucaracha (traditional), taken at an easy walking pace — 3/4 with a pickup; degrees in C major (0 = C4)
   const CUCARACHA = {
-    bpm: 196, beatsPerBar: 3, barStart: 1.5, length: 36,
+    bpm: 112, beatsPerBar: 3, barStart: 1.5, length: 36,
     melody: [
       [4,.5],[4,.5],[4,.5],[7,1.5],[9,3],
       [4,.5],[4,.5],[4,.5],[7,1.5],[9,3],
@@ -721,7 +747,7 @@
   };
   // Cumpleaños feliz — 3/4, pickup of one beat
   const CUMPLE = {
-    bpm: 112, beatsPerBar: 3, barStart: 1, length: 25,
+    bpm: 96, beatsPerBar: 3, barStart: 1, length: 25,
     melody: [
       [4,.75],[4,.25],
       [5,1],[4,1],[7,1],
@@ -736,6 +762,8 @@
     bars: ["C","G7","G7","C","C7","F","C","C"],
     lyrics: [[0,"Cumpleaños feliz"],[6,"te deseamos a ti"],[12,"cumpleaños, Tante Gine"],[18,"cumpleaños feliz"],[24.5,"¡Te queremos! ♥"]]
   };
+  // render both songs right away (no sound is made), so the music is ready the moment the game starts
+  renderSong(CUCARACHA); renderSong(CUMPLE);
 
   function noiseHit(t, freq, q, vol, dur) {
     const a = audio.ctx, s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
@@ -760,7 +788,7 @@
     cheer(dur = 1.6, vol = 0.22) {
       if (!audio.ctx || !audio.on) return; const a = audio.ctx, t = a.currentTime, s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
       s.buffer = audio.noise; s.loop = true; f.type = "bandpass"; f.frequency.value = 1300; f.Q.value = 0.6;
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol * 0.6, t + 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       s.connect(f); f.connect(g); g.connect(audio.sfx); s.start(t); s.stop(t + dur + 0.05);
     },
     bell(times = 3) {
@@ -777,17 +805,6 @@
       s.connect(f); f.connect(g); g.connect(audio.sfx); s.start(t); s.stop(t + 0.55);
     }
   };
-  function say(text) {
-    if (!audio.on) return;
-    try {
-      const ss = window.speechSynthesis; if (!ss) return;
-      ss.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      const v = ss.getVoices().find((v) => /es[-_]MX/i.test(v.lang)) || ss.getVoices().find((v) => /^es/i.test(v.lang));
-      if (v) u.voice = v; u.lang = v ? v.lang : "es-MX"; u.rate = 1.02; u.pitch = 0.85; u.volume = 1;
-      ss.speak(u);
-    } catch (e) {}
-  }
   const soundButtons = document.querySelectorAll(".sound-toggle");
   function setSound(on) {
     audio.on = on;
@@ -796,7 +813,6 @@
       b.classList.toggle("off", !on); b.setAttribute("aria-label", label); b.title = label;
     });
     if (audio.master) audio.master.gain.value = on ? 0.9 : 0;
-    if (!on) { try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {} }
   }
   soundButtons.forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); setSound(!audio.on); }));
 
@@ -995,27 +1011,18 @@
     resetGame();
     $("poster").hidden = true; $("finale").hidden = true; $("sound-finale").hidden = true; $("scrollcue").hidden = true;
     state = "intro";
-    const lines = [
-      ["¡Damas y caballeros!", "Damas y caballeros"],
-      ["En esta esquina…", "En esta esquina"],
-      ["con 42 años de experiencia…", "con cuarenta y dos años de experiencia"],
-      ["¡la Supertante… GINE!", "la Supertante... Giiiine!"],
-      ["Y en la otra esquina…", "Y en la otra esquina"],
-      ["¡El Piñatón!", "El Piñatón!"]
-    ];
+    // shown as text only: a spoken announcer can knock out the game's sound on iPhone
+    const lines = ["¡Damas y caballeros!", "En esta esquina…", "con 42 años de experiencia…", "¡la Supertante… GINE!", "Y en la otra esquina…", "¡El Piñatón!"];
     const ann = $("announce"); ann.hidden = false;
     let i = 0, timer = null;
     const finish = () => {
       clearTimeout(timer); ann.hidden = true; ann.onclick = null;
-      try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
       startFight();
     };
     const step = () => {
       if (i >= lines.length) { finish(); return; }
-      const [txt, spoken] = lines[i];
-      $("announce-line").textContent = txt;
+      $("announce-line").textContent = lines[i];
       $("announce-line").animate([{ transform: "scale(.6)", opacity: 0 }, { transform: "scale(1.06)", opacity: 1, offset: .6 }, { transform: "scale(1)" }], { duration: 380, easing: "ease-out" });
-      say(spoken);
       if (i === 3) sfx.cheer(2, 0.3);
       if (i === 5) sfx.cheer(1, 0.12);
       i++; timer = setTimeout(step, i === 4 ? 2200 : 1500);
