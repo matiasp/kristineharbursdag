@@ -1,0 +1,1217 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Bursdagsspill for Supertante Gine: lucha libre mot en piñata full av minner i Parque México.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%AA%85%3C/text%3E%3C/svg%3E">
+<title>¡Lucha de Piñata!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=Archivo:wght@400;600;800&display=swap">
+<style>
+  /* Single committed look: a lucha libre poster printed in Mexican pinks */
+  :root {
+    color-scheme: light;
+    --rosa: #E4007C;
+    --rosa-deep: #A8005B;
+    --amarillo: #FFC21A;
+    --turquesa: #00A6A6;
+    --tinta: #231A15;
+    --papel: #FFF4E0;
+    --azul: #1F4FA8;
+    --cal: #F3E9D6;
+    --display: "Bungee", "Arial Black", Impact, sans-serif;
+    --shade: "Bungee Shade", "Bungee", "Arial Black", Impact, sans-serif;
+    --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--tinta);
+    color: var(--papel);
+    font-family: var(--body);
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #stage { position: relative; width: 100%; height: 100%; overflow: hidden; touch-action: manipulation; }
+  canvas#scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  button { font: inherit; cursor: pointer; }
+  button:focus-visible { outline: 3px solid var(--amarillo); outline-offset: 3px; }
+
+  .btn {
+    font-family: var(--display);
+    font-size: clamp(18px, 4.6vw, 26px);
+    letter-spacing: .02em;
+    color: var(--tinta);
+    background: var(--amarillo);
+    border: 3px solid var(--tinta);
+    border-radius: 6px;
+    padding: 14px 26px;
+    box-shadow: 5px 5px 0 var(--tinta);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .btn:active { transform: translate(3px,3px); box-shadow: 2px 2px 0 var(--tinta); }
+  .btn.ghost { background: var(--papel); font-size: clamp(14px, 3.6vw, 18px); padding: 10px 18px; }
+
+  /* ---------- Talavera wall + lucha cartel (title and finale) ---------- */
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; z-index: 5; }
+  .screen.wall {
+    display: block; overflow-y: auto; padding: 10px;
+    background-color: var(--cal);
+    background-image: var(--tile, none);
+    background-size: var(--tile-size, 152px) var(--tile-size, 152px);
+    background-attachment: local;
+  }
+  /* a flat, letterpress-style poster pasted on the tiles */
+  .cartel {
+    position: relative; max-width: 680px; min-height: 100%; margin: 0 auto;
+    display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
+    background: var(--rosa); border: 3px solid var(--tinta);
+    box-shadow: inset 0 0 0 6px var(--rosa), inset 0 0 0 8px var(--papel), 6px 6px 0 rgba(35,26,21,.35);
+    padding: 14px 12px 24px;
+  }
+  .picado { width: 100%; height: 44px; flex: none; }
+  .poster-eyebrow {
+    font-family: var(--display); font-size: clamp(11px, 2.8vw, 14px); letter-spacing: .18em;
+    color: var(--papel); background: var(--tinta); padding: 5px 12px; text-transform: uppercase;
+  }
+  .poster-title {
+    font-family: var(--shade); color: var(--amarillo);
+    font-size: clamp(40px, 12vw, 96px); line-height: .92; margin: 4px 0 0;
+    text-shadow: 4px 4px 0 var(--tinta);
+    text-wrap: balance;
+  }
+  .bout { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; width: min(100%, 640px); }
+  .fighter { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+  .fighter canvas { width: min(33vw, 210px); height: min(33vw, 210px); }
+  .fighter-name { font-family: var(--display); font-size: clamp(14px, 4vw, 24px); line-height: 1.05; color: var(--papel); text-shadow: 2px 2px 0 var(--tinta); }
+  .fighter-tag { font-size: clamp(11px, 2.8vw, 13px); font-weight: 600; color: var(--tinta); background: var(--amarillo); padding: 2px 8px; border-radius: 3px; }
+  .vs { font-family: var(--display); font-size: clamp(28px, 8vw, 54px); color: var(--turquesa); text-shadow: 3px 3px 0 var(--tinta); transform: rotate(-8deg); }
+  .billing {
+    font-family: var(--display); font-size: clamp(12px, 3.2vw, 16px); color: var(--tinta); line-height: 1.5;
+    background: var(--papel); border: 3px solid var(--tinta); padding: 10px 14px; width: min(100%, 520px);
+  }
+  .billing b { color: var(--rosa); font-weight: 400; }
+  .howto { max-width: 46ch; font-size: 15px; line-height: 1.45; color: var(--papel); font-weight: 600; text-wrap: balance; }
+
+  /* ---------- Announcer ---------- */
+  #announce { justify-content: center; pointer-events: auto; background: rgba(35,26,21,.55); padding-inline: 16px; }
+  #announce-line {
+    font-family: var(--display); text-align: center; color: var(--amarillo);
+    font-size: clamp(30px, 8.5vw, 76px); line-height: 1.02; text-shadow: 4px 4px 0 var(--rosa), 8px 8px 0 var(--tinta);
+    max-width: 14ch; text-wrap: balance;
+  }
+  #announce-skip { position: absolute; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); font-size: 13px; color: var(--papel); opacity: .8; }
+
+  /* ---------- HUD ---------- */
+  #hud { position: absolute; left: 0; right: 0; top: 0; padding: 12px 16px 10px; background: linear-gradient(180deg, rgba(35,26,21,.92), rgba(35,26,21,.75) 75%, rgba(35,26,21,0)); display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; z-index: 4; pointer-events: none; }
+  .meter { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .meter-label { font-family: var(--display); font-size: clamp(10px, 2.7vw, 13px); letter-spacing: .04em; color: var(--papel); text-shadow: 1.5px 1.5px 0 var(--tinta); display: flex; justify-content: space-between; gap: 6px; white-space: nowrap; }
+  .meter-label span:last-child { font-variant-numeric: tabular-nums; }
+  .bar { height: 14px; background: rgba(35,26,21,.75); border: 2px solid var(--tinta); border-radius: 3px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 100%; transform-origin: left; transition: transform .25s ease; }
+  #hp i { background: repeating-linear-gradient(-45deg, var(--rosa) 0 8px, var(--rosa-deep) 8px 16px); }
+  #love i { background: linear-gradient(90deg, #ff6fa9, var(--rosa)); transform: scaleX(0); }
+  #super-wrap { grid-column: 1 / -1; justify-self: center; width: min(70%, 360px); }
+  #super i { background: linear-gradient(90deg, var(--turquesa), var(--amarillo)); transform: scaleX(0); transition: transform .12s linear; }
+  #super-wrap.ready .bar { box-shadow: 0 0 0 3px var(--amarillo), 0 0 22px var(--amarillo); animation: pulse .5s ease-in-out infinite alternate; }
+  @keyframes pulse { to { box-shadow: 0 0 0 3px var(--rosa), 0 0 30px var(--rosa); } }
+
+  #album {
+    position: absolute; right: 16px; top: var(--hud-h, 98px); z-index: 4; pointer-events: none;
+    font-family: var(--display); font-size: 12px; color: var(--tinta); background: var(--papel);
+    border: 2px solid var(--tinta); padding: 4px 8px; border-radius: 3px; box-shadow: 3px 3px 0 var(--tinta);
+    font-variant-numeric: tabular-nums;
+  }
+  #sound {
+    position: absolute; z-index: 9; right: 16px; top: calc(var(--hud-h, 98px) + 36px);
+    font-family: var(--display); font-size: 12px; color: var(--tinta); background: var(--papel);
+    border: 2px solid var(--tinta); border-radius: 3px; padding: 6px 10px; box-shadow: 3px 3px 0 var(--tinta);
+  }
+  #stage.at-finale #sound { top: auto; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+  #tapnote {
+    position: absolute; z-index: 4; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    font-family: var(--display); font-size: clamp(12px, 3.2vw, 15px); color: var(--amarillo); text-shadow: 2px 2px 0 var(--tinta);
+    pointer-events: none; white-space: nowrap; animation: blink 1s steps(2) infinite;
+  }
+  @keyframes blink { 50% { opacity: .35; } }
+
+  /* ---------- Photo moments ---------- */
+  #dim { position: absolute; inset: 0; z-index: 5; background: rgba(35,26,21,.66); opacity: 0; transition: opacity .35s ease; pointer-events: none; }
+  #dim.on { opacity: 1; }
+  .polaroid {
+    position: absolute; z-index: 6; left: 0; top: 0; margin: 0; pointer-events: none;
+    background: #fffdf7; padding: 10px 10px 40px; box-shadow: 0 14px 36px rgba(0,0,0,.5);
+  }
+  .polaroid img { display: block; object-fit: cover; }
+  .polaroid figcaption { position: absolute; left: 10px; right: 10px; bottom: 14px; text-align: center; font-family: var(--display); font-size: 13px; color: var(--rosa); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .polaroid .timer { position: absolute; left: 10px; right: 10px; bottom: 6px; height: 3px; border-radius: 2px; background: var(--turquesa); transform-origin: left; }
+
+  /* ---------- Finale ---------- */
+  #finale .cartel { gap: 18px; padding-bottom: 64px; }
+  .ganadora { font-family: var(--shade); color: var(--amarillo); font-size: clamp(38px, 11vw, 88px); line-height: .95; margin: 6px 0 0; text-shadow: 4px 4px 0 var(--tinta); }
+  .champ { position: relative; width: min(78vw, 340px); flex: none; margin-top: 6px; }
+  .champ img { width: 100%; display: block; border: 6px solid var(--papel); box-shadow: 8px 8px 0 var(--tinta); transform: rotate(-2deg); }
+  .belt {
+    position: absolute; left: 50%; bottom: -22px; transform: translateX(-50%) rotate(2deg);
+    background: linear-gradient(180deg, #ffe07a, var(--amarillo) 45%, #c98a00);
+    border: 3px solid var(--tinta); border-radius: 999px; padding: 8px 18px; color: var(--tinta);
+    font-family: var(--display); font-size: clamp(11px, 3vw, 14px); line-height: 1.1; white-space: nowrap; box-shadow: 4px 4px 0 var(--tinta);
+  }
+  .belt small { display: block; font-size: .78em; color: var(--rosa-deep); }
+  #lyric { min-height: 2.6em; font-family: var(--display); color: var(--papel); font-size: clamp(20px, 5.5vw, 34px); line-height: 1.2; text-shadow: 3px 3px 0 var(--tinta); margin-top: 26px; text-wrap: balance; }
+  .love-card {
+    background: var(--papel); color: var(--tinta); border: 3px solid var(--tinta); box-shadow: 7px 7px 0 var(--tinta);
+    padding: 22px 20px; width: min(100%, 560px); text-align: left;
+  }
+  .love-card h2 { font-family: var(--display); font-weight: 400; color: var(--rosa); font-size: clamp(22px, 5.8vw, 32px); line-height: 1.05; margin: 0 0 12px; text-wrap: balance; }
+  .love-card .message { font-size: clamp(20px, 5.2vw, 26px); font-weight: 800; line-height: 1.35; margin: 0; max-width: 32ch; text-wrap: balance; }
+  .love-card .meterline { font-family: var(--display); font-size: 13px; letter-spacing: .03em; color: var(--tinta); border-top: 2px dashed var(--rosa); padding-top: 10px; margin-top: 14px; }
+  .love-card .meterline b { color: var(--rosa); font-weight: 400; }
+  .gallery-title { font-family: var(--display); color: var(--amarillo); font-size: clamp(18px, 5vw, 26px); margin-top: 8px; text-shadow: 2px 2px 0 var(--tinta); }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(140px, 42vw), 1fr)); gap: 14px; width: min(100%, 900px); }
+  .gallery button { padding: 6px 6px 8px; background: #fffdf7; border: 0; box-shadow: 4px 4px 0 var(--tinta); transition: transform .15s ease; }
+  .gallery button:nth-child(odd) { transform: rotate(-1.5deg); }
+  .gallery button:nth-child(even) { transform: rotate(1.5deg); }
+  .gallery button:hover { transform: rotate(0) scale(1.04); }
+  .gallery img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+  .finale-actions { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+
+  #lightbox { position: absolute; inset: 0; z-index: 20; background: rgba(35,26,21,.92); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  #lightbox img { max-width: 100%; max-height: 86%; border: 8px solid #fffdf7; box-shadow: 0 16px 40px rgba(0,0,0,.5); }
+  #lightbox p { position: absolute; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; text-align: center; font-family: var(--display); font-size: 13px; color: var(--papel); }
+
+  @media (prefers-reduced-motion: reduce) {
+    #tapnote, #super-wrap.ready .bar { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="scene" aria-hidden="true"></canvas>
+
+  <div id="hud" hidden>
+    <div class="meter"><div class="meter-label"><span>El Piñatón</span><span id="hp-num">42 / 42</span></div><div class="bar" id="hp"><i></i></div></div>
+    <div class="meter"><div class="meter-label"><span>Cariñómetro</span><span id="love-num">0 %</span></div><div class="bar" id="love"><i></i></div></div>
+    <div class="meter" id="super-wrap"><div class="meter-label"><span id="super-label">Supertante-måler</span><span></span></div><div class="bar" id="super"><i></i></div></div>
+  </div>
+  <div id="album" hidden>Minner 0 / 25</div>
+  <div id="tapnote" hidden>Trykk for å slå!</div>
+  <div id="dim" aria-hidden="true"></div>
+
+  <!-- Title poster -->
+  <section class="screen wall" id="poster">
+   <div class="cartel">
+    <canvas class="picado" id="picado1" aria-hidden="true"></canvas>
+    <div class="poster-eyebrow">Parque México · Foro Lindbergh · Función única</div>
+    <h1 class="poster-title">¡Lucha de Piñata!</h1>
+    <div class="bout">
+      <div class="fighter">
+        <canvas id="pv-gine" aria-label="Supertante Gine i Mexico-sombrero"></canvas>
+        <div class="fighter-name">Supertante<br>Gine</div>
+        <div class="fighter-tag">42 år · ubeseiret</div>
+      </div>
+      <div class="vs">VS</div>
+      <div class="fighter">
+        <canvas id="pv-pinata" aria-label="Piñataen El Piñatón"></canvas>
+        <div class="fighter-name">El<br>Piñatón</div>
+        <div class="fighter-tag">Full av minner</div>
+      </div>
+    </div>
+    <div class="billing">Lucha estelar a <b>42 golpes</b> · Entrada: <b>42 tacos</b><br>Med heiagjeng: <b>Helmer &amp; Åsta</b></div>
+    <p class="howto">Trykk på skjermen (eller mellomrom) for å slå. Slår du raskt, fylles Supertante-måleren, og da kommer et supertrekk.</p>
+    <button class="btn" id="start">¡A luchar!</button>
+   </div>
+  </section>
+
+  <!-- Announcer -->
+  <section class="screen" id="announce" hidden>
+    <div id="announce-line"></div>
+    <div id="announce-skip">Trykk for å hoppe over</div>
+  </section>
+
+  <!-- Finale -->
+  <section class="screen wall" id="finale" hidden>
+   <div class="cartel">
+    <canvas class="picado" id="picado2" aria-hidden="true"></canvas>
+    <h1 class="ganadora">¡Ganadora!</h1>
+    <div class="champ">
+      <img src="img/tante2.jpg" alt="Tante Gine i Mexico-sombrero og Mexico-drakt blant fotballfans">
+      <div class="belt">Campeona Mundial de Tantes<small>42 años · invicta</small></div>
+    </div>
+    <div id="lyric" aria-live="polite"></div>
+    <article class="love-card">
+      <h2>¡Feliz cumpleaños, Supertante Gine!</h2>
+      <p class="message">Du er verdens beste supertante. Vi er veldig glade i deg!</p>
+      <div class="meterline">Cariñómetro: <b>∞ %</b> (måleren tålte ikke mer)</div>
+    </article>
+    <div class="finale-actions">
+      <button class="btn ghost" id="sing-again">Spill sangen igjen</button>
+      <button class="btn ghost" id="play-again">Ny kamp</button>
+    </div>
+    <div class="gallery-title">Alle minnene fra piñataen</div>
+    <div class="gallery" id="gallery"></div>
+   </div>
+  </section>
+
+  <div id="lightbox" hidden><img alt=""><p>Trykk for å lukke</p></div>
+  <button id="sound" hidden aria-pressed="true">Lyd: på</button>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---------------------------------------------------------------- assets
+  const PHOTO_COUNT = 25;
+  const photoSrc = Array.from({ length: PHOTO_COUNT }, (_, i) => `img/p${String(i + 1).padStart(2, "0")}.jpg`);
+  const CAPTIONS = [
+    "¡Te queremos!", "Verdens beste tante", "Supertante i aksjon", "¡Qué bonita!",
+    "Mester i kos", "Glad i deg!", "¡Eres la mejor!", "Tante Gine ♥",
+    "Gull verdt", "¡Olé!", "Favoritt-tanta", "¡Viva Gine!"
+  ];
+  function loadImg(src) { const im = new Image(); im.src = src; return im; }
+  const headImg = loadImg("img/head.png");
+  const parkImg = loadImg("img/parque2.jpg");
+  const photoImgs = photoSrc.map(loadImg); // warm the cache and know each photo's shape
+
+  // ---------------------------------------------------------------- palette
+  const C = {
+    rosa: "#E4007C", rosaDeep: "#A8005B", amarillo: "#FFC21A", turquesa: "#00A6A6",
+    tinta: "#231A15", papel: "#FFF4E0", azul: "#1F4FA8", verde: "#1F9E57", naranja: "#FF7A1A",
+    strawDark: "#B9822A", skin: "#E2A47E"
+  };
+
+  // ---------------------------------------------------------------- canvas
+  const cv = $("scene"), ctx = cv.getContext("2d");
+  let W = 0, H = 0, DPR = 1, S = 1;
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = cv.clientWidth; H = cv.clientHeight;
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    S = Math.max(0.55, Math.min(W / 480, H / 720, 1.35));
+    drawPicado($("picado1")); drawPicado($("picado2"));
+    if (typeof measureHud === "function") measureHud();
+  }
+  window.addEventListener("resize", resize);
+
+  // ---------------------------------------------------------------- drawing helpers
+  function drawPicado(c) {
+    if (!c || !c.clientWidth) return;
+    const w = c.clientWidth, h = c.clientHeight, d = Math.min(window.devicePixelRatio || 1, 2);
+    c.width = w * d; c.height = h * d;
+    const g = c.getContext("2d"); g.setTransform(d, 0, 0, d, 0, 0);
+    paintPicado(g, 0, 4, w, h - 4, 0);
+  }
+  // A string of papel picado flags with cut-out holes
+  function paintPicado(g, x0, y0, w, h, sway) {
+    const cols = [C.amarillo, C.turquesa, C.papel, C.verde, C.naranja, C.azul];
+    const n = Math.max(5, Math.round(w / 64)), fw = w / n;
+    g.strokeStyle = C.tinta; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(x0 + w / 2, y0 + 8, x0 + w, y0); g.stroke();
+    for (let i = 0; i < n; i++) {
+      const x = x0 + i * fw + 3, fwi = fw - 6, sag = Math.sin((i + .5) / n * Math.PI) * 7;
+      const y = y0 + sag, sw = Math.sin(sway + i) * 2;
+      g.save(); g.translate(x + fwi / 2, y); g.rotate(sw * 0.02);
+      g.fillStyle = cols[i % cols.length];
+      g.beginPath(); g.moveTo(-fwi / 2, 0); g.lineTo(fwi / 2, 0); g.lineTo(fwi / 2, h * .82);
+      const teeth = 5;
+      for (let t = teeth; t >= 0; t--) {
+        const tx = -fwi / 2 + (t / teeth) * fwi;
+        g.lineTo(tx, h * (t % 2 ? .82 : .95));
+      }
+      g.closePath(); g.fill();
+      // cut-outs: a flower and diamonds
+      g.globalCompositeOperation = "destination-out";
+      const cy = h * .42, r = Math.min(fwi, h) * .16;
+      for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; g.beginPath(); g.ellipse(Math.cos(a) * r, cy + Math.sin(a) * r, r * .55, r * .3, a, 0, 7); g.fill(); }
+      g.beginPath(); g.arc(0, cy, r * .35, 0, 7); g.fill();
+      for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(sx * fwi * .33, h * .15); g.lineTo(sx * fwi * .4, h * .25); g.lineTo(sx * fwi * .33, h * .35); g.lineTo(sx * fwi * .26, h * .25); g.fill(); }
+      g.globalCompositeOperation = "source-over";
+      g.restore();
+    }
+  }
+
+  // Talavera wall: hand-painted Puebla tiles (cobalt, marigold and green on a cream glaze).
+  // A 2×2 block of slightly different tiles repeats, so the wall reads as painted rather than printed.
+  function paintTalavera() {
+    const T = 76, n = 2, d = 2;
+    const c = document.createElement("canvas"); c.width = c.height = T * n * d;
+    const g = c.getContext("2d"); g.scale(d, d);
+    const cobalt = "#1F4FA8", cobaltDeep = "#163C82", marigold = "#F2A900", orange = "#DD6B20", leaf = "#2E7D4F", glaze = "#FBF5E8";
+    let seed = 7;
+    const wob = (k) => { seed = (seed * 16807) % 2147483647; return (seed / 2147483647 - 0.5) * k; }; // steady brush wobble
+    for (let ty = 0; ty < n; ty++) for (let tx = 0; tx < n; tx++) {
+      const x0 = tx * T, y0 = ty * T, cx = x0 + T / 2, cy = y0 + T / 2;
+      g.save(); g.beginPath(); g.rect(x0, y0, T, T); g.clip();
+      const gl = g.createRadialGradient(cx - 8, cy - 10, 4, cx, cy, T * 0.8);
+      gl.addColorStop(0, "#FFFCF4"); gl.addColorStop(1, "#EFE4CE");
+      g.fillStyle = gl; g.fillRect(x0, y0, T, T);
+      // corner medallions: each tile paints a quarter, four neighbours complete it
+      for (const [qx, qy] of [[x0, y0], [x0 + T, y0], [x0, y0 + T], [x0 + T, y0 + T]]) {
+        g.fillStyle = cobalt; g.beginPath(); g.arc(qx, qy, T * 0.22 + wob(1.5), 0, 7); g.fill();
+        g.fillStyle = glaze; g.beginPath(); g.arc(qx, qy, T * 0.15 + wob(1), 0, 7); g.fill();
+        g.fillStyle = marigold; g.beginPath(); g.arc(qx, qy, T * 0.085, 0, 7); g.fill();
+        g.fillStyle = orange; g.beginPath(); g.arc(qx, qy, T * 0.04, 0, 7); g.fill();
+      }
+      // pairs of leaves reaching in from each edge
+      for (const [mx, my, a] of [[cx, y0, 0], [x0 + T, cy, Math.PI / 2], [cx, y0 + T, Math.PI], [x0, cy, -Math.PI / 2]]) {
+        g.save(); g.translate(mx, my); g.rotate(a); g.fillStyle = leaf;
+        g.beginPath(); g.ellipse(-5, T * 0.075, 3.2, 7 + wob(1.5), 0.5, 0, 7); g.fill();
+        g.beginPath(); g.ellipse(5, T * 0.075, 3.2, 7 + wob(1.5), -0.5, 0, 7); g.fill();
+        g.restore();
+      }
+      // the central eight-petal flower
+      g.save(); g.translate(cx, cy); g.rotate(wob(0.12));
+      for (let k = 0; k < 8; k++) {
+        g.rotate(Math.PI / 4);
+        g.fillStyle = k % 2 ? cobalt : cobaltDeep;
+        g.beginPath(); g.ellipse(0, -T * 0.17, T * 0.065 + wob(0.8), T * 0.15 + wob(1.2), 0, 0, 7); g.fill();
+      }
+      g.strokeStyle = cobalt; g.lineWidth = 1.3; g.setLineDash([2.2, 3]);
+      g.beginPath(); g.arc(0, 0, T * 0.355, 0, 7); g.stroke(); g.setLineDash([]);
+      g.fillStyle = orange; g.beginPath(); g.arc(0, 0, T * 0.085, 0, 7); g.fill();
+      g.fillStyle = marigold; g.beginPath(); g.arc(0, 0, T * 0.05, 0, 7); g.fill();
+      g.restore();
+      g.restore(); // tile clip
+      g.strokeStyle = "rgba(110,90,70,.35)"; g.lineWidth = 1; g.strokeRect(x0 + 0.5, y0 + 0.5, T - 1, T - 1); // grout
+    }
+    document.documentElement.style.setProperty("--tile", `url(${c.toDataURL("image/png")})`);
+    document.documentElement.style.setProperty("--tile-size", `${T * n}px`);
+  }
+
+  // Tante Gine, luchadora in her MEXICO sombrero. (x,y) = feet; s = scale; pose = {arms: 0 rest..1 up, spin, squash}
+  function drawGine(g, x, y, s, pose = {}) {
+    const arms = pose.arms || 0, t = pose.t || 0;
+    g.save(); g.translate(x, y); g.scale(s, s);
+    if (pose.spin) g.rotate(pose.spin);
+    const sq = pose.squash || 0; g.scale(1 + sq * .12, 1 - sq * .12);
+    // shadow handled outside
+    // cape
+    const flap = Math.sin(t * 6) * 6 + arms * 10;
+    g.fillStyle = C.turquesa; g.strokeStyle = C.tinta; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(-26, -118); g.quadraticCurveTo(-52 - flap, -60, -44 - flap * .6, -8);
+    g.lineTo(44 + flap * .6, -8); g.quadraticCurveTo(52 + flap, -60, 26, -118); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = C.amarillo; g.beginPath(); // cape star
+    star(g, 0, -52, 9, 4, 5); g.fill();
+    // legs + boots
+    g.fillStyle = C.rosaDeep;
+    g.fillRect(-20, -56, 15, 38); g.fillRect(5, -56, 15, 38);
+    g.strokeRect(-20, -56, 15, 38); g.strokeRect(5, -56, 15, 38);
+    g.fillStyle = C.tinta;
+    roundRect(g, -24, -24, 21, 24, 5); g.fill(); roundRect(g, 3, -24, 21, 24, 5); g.fill();
+    g.fillStyle = C.amarillo; g.fillRect(-24, -22, 21, 4); g.fillRect(3, -22, 21, 4);
+    // neck
+    g.fillStyle = C.skin; g.fillRect(-9, -138, 18, 20);
+    // body (leotard)
+    g.fillStyle = C.rosa; g.strokeStyle = C.tinta;
+    roundRect(g, -28, -122, 56, 72, 14); g.fill(); g.stroke();
+    // zigzag trim
+    g.strokeStyle = C.amarillo; g.lineWidth = 3; g.beginPath();
+    for (let i = 0; i <= 8; i++) g.lineTo(-24 + i * 6, -110 + (i % 2) * 6); g.stroke();
+    // championship belt
+    g.fillStyle = C.amarillo; g.strokeStyle = C.tinta; g.lineWidth = 2.5;
+    g.fillRect(-30, -70, 60, 13); g.strokeRect(-30, -70, 60, 13);
+    g.beginPath(); g.ellipse(0, -63.5, 13, 10, 0, 0, 7); g.fillStyle = "#ffe07a"; g.fill(); g.stroke();
+    g.fillStyle = C.rosa; g.font = "bold 9px Bungee, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("42", 0, -63);
+    // head: Gine in her real MEXICO sombrero, cut out of her photo.
+    // Sprite is 500×345 px; her face centre sits at (265, 240) and is placed at (0, -160).
+    const HK = 0.4; // sprite px → figure units
+    if (headImg.complete && headImg.naturalWidth) {
+      g.drawImage(headImg, -265 * HK, -160 - 240 * HK, 500 * HK, 345 * HK);
+    } else {
+      g.fillStyle = C.skin; g.strokeStyle = C.tinta; g.lineWidth = 3;
+      g.beginPath(); g.arc(0, -160, 30, 0, 7); g.fill(); g.stroke();
+    }
+    // arms (drawn over the brim so raised fists stay visible)
+    g.lineCap = "round";
+    for (const side of [-1, 1]) {
+      const sx = side * 26, sy = -112;
+      const restA = side * 1.1, upA = side * 2.35; // radians from straight down
+      const a = restA + (upA - restA) * arms + Math.sin(t * 5 + side) * .05;
+      const ex = sx + Math.sin(a) * 30, ey = sy + Math.cos(a) * 30;
+      const a2 = a + side * (0.35 - arms * .35);
+      const hx = ex + Math.sin(a2) * 26, hy = ey + Math.cos(a2) * 26;
+      g.strokeStyle = C.tinta; g.lineWidth = 13; g.beginPath(); g.moveTo(sx, sy); g.lineTo(ex, ey); g.lineTo(hx, hy); g.stroke();
+      g.strokeStyle = C.skin; g.lineWidth = 8; g.beginPath(); g.moveTo(sx, sy); g.lineTo(ex, ey); g.lineTo(hx, hy); g.stroke();
+      g.fillStyle = C.rosa; g.strokeStyle = C.tinta; g.lineWidth = 2.5; // wrist cuff / glove
+      g.beginPath(); g.arc(hx, hy, 7.5, 0, 7); g.fill(); g.stroke();
+    }
+    g.restore();
+  }
+  function star(g, x, y, r1, r2, n) {
+    for (let i = 0; i < n * 2; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / n, r = i % 2 ? r2 : r1;
+      g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+    }
+    g.closePath();
+  }
+  function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+
+  // El Piñatón: a seven-point star piñata with a lucha mask face. dmg 0..1
+  function drawPinata(g, x, y, s, rot, dmg, t, hitFlash) {
+    g.save(); g.translate(x, y); g.scale(s, s); g.rotate(rot);
+    const cones = [C.amarillo, C.turquesa, C.verde, C.naranja, C.azul, C.amarillo, C.turquesa];
+    const R = 50, L = 74;
+    for (let i = 0; i < 7; i++) {
+      const a = -Math.PI / 2 + i * Math.PI * 2 / 7;
+      if (dmg > 0.55 && i === 3) continue;               // a cone has fallen off
+      if (dmg > 0.8 && i === 5) continue;
+      g.save(); g.rotate(a);
+      // streamers at the tip
+      const tip = R + L;
+      for (let k = 0; k < 3; k++) {
+        g.strokeStyle = [C.rosa, C.amarillo, C.turquesa][k]; g.lineWidth = 3;
+        g.beginPath(); g.moveTo(tip - 4, 0);
+        g.quadraticCurveTo(tip + 14, (k - 1) * 10 + Math.sin(t * 7 + i + k) * 6, tip + 28, (k - 1) * 14 + Math.sin(t * 5 + i * 2 + k) * 9);
+        g.stroke();
+      }
+      g.fillStyle = cones[i]; g.strokeStyle = C.tinta; g.lineWidth = 3;
+      g.beginPath(); g.moveTo(R - 6, -17); g.lineTo(tip, 0); g.lineTo(R - 6, 17); g.closePath(); g.fill(); g.stroke();
+      // tissue fringe stripes
+      g.strokeStyle = "rgba(35,26,21,.35)"; g.lineWidth = 1.5;
+      for (let k = 1; k < 4; k++) { const px = R - 6 + (L + 6) * k / 4, hh = 17 * (1 - k / 4); g.beginPath(); g.moveTo(px, -hh); g.lineTo(px, hh); g.stroke(); }
+      g.restore();
+    }
+    // body
+    g.fillStyle = hitFlash > 0 ? "#ff5aa8" : C.rosa; g.strokeStyle = C.tinta; g.lineWidth = 3.5;
+    g.beginPath(); g.arc(0, 0, R, 0, 7); g.fill(); g.stroke();
+    // fringe rings
+    g.strokeStyle = "rgba(255,244,224,.55)"; g.lineWidth = 2;
+    for (const rr of [R - 8, R - 16]) { g.beginPath(); g.arc(0, 0, rr, 0.3, Math.PI - 0.3); g.stroke(); }
+    // lucha mask face
+    g.fillStyle = C.tinta;
+    g.beginPath(); g.moveTo(-34, -22); g.quadraticCurveTo(0, -46, 34, -22); g.quadraticCurveTo(40, 10, 22, 30); g.quadraticCurveTo(0, 40, -22, 30); g.quadraticCurveTo(-40, 10, -34, -22); g.fill();
+    // flame accents on mask
+    g.fillStyle = C.amarillo;
+    for (const sx of [-1, 1]) {
+      g.beginPath(); g.moveTo(sx * 6, -30); g.quadraticCurveTo(sx * 26, -30, sx * 30, -10); g.quadraticCurveTo(sx * 20, -18, sx * 10, -16); g.closePath(); g.fill();
+    }
+    // eye holes
+    const dizzy = dmg > 0.7;
+    for (const sx of [-1, 1]) {
+      g.fillStyle = C.papel; g.beginPath(); g.ellipse(sx * 14, -4, 10, 8, sx * -0.3, 0, 7); g.fill();
+      g.strokeStyle = C.rosa; g.lineWidth = 2; g.stroke();
+      g.fillStyle = C.tinta;
+      if (dizzy) {
+        g.strokeStyle = C.tinta; g.lineWidth = 2; g.beginPath();
+        for (let k = 0; k < 14; k++) { const a = k * .7 + t * 6, r = k * .45; g.lineTo(sx * 14 + Math.cos(a) * r, -4 + Math.sin(a) * r); }
+        g.stroke();
+      } else if (hitFlash > 0) {
+        g.strokeStyle = C.tinta; g.lineWidth = 2.5; g.beginPath(); g.moveTo(sx * 14 - 5, -8); g.lineTo(sx * 14 + 5, -1); g.moveTo(sx * 14 + 5, -8); g.lineTo(sx * 14 - 5, -1); g.stroke();
+      } else {
+        g.beginPath(); g.arc(sx * 14 + Math.sin(t) * 2, -3, 3.6, 0, 7); g.fill();
+      }
+      // angry brow
+      g.strokeStyle = C.tinta; g.lineWidth = 3; g.beginPath(); g.moveTo(sx * 24, -18); g.lineTo(sx * 6, -12); g.stroke();
+    }
+    // mouth
+    g.fillStyle = C.papel; g.beginPath();
+    if (hitFlash > 0 || dizzy) { g.ellipse(0, 18, 7, 6, 0, 0, 7); }
+    else { g.moveTo(-11, 21); g.quadraticCurveTo(0, 12, 11, 21); g.quadraticCurveTo(0, 17, -11, 21); }
+    g.fill();
+    // cracks
+    if (dmg > 0.2) {
+      g.strokeStyle = C.tinta; g.lineWidth = 2.2; g.beginPath();
+      const cracks = [[[-40, -18], [-28, -8], [-34, 4], [-22, 12]], [[38, 20], [26, 14], [30, 30]], [[10, -48], [4, -34], [14, -28]], [[-12, 46], [-6, 36], [-16, 30]]];
+      const k = Math.min(cracks.length, Math.ceil((dmg - 0.2) / 0.2));
+      for (let i = 0; i < k; i++) { const c = cracks[i]; g.moveTo(c[0][0], c[0][1]); for (const p of c.slice(1)) g.lineTo(p[0], p[1]); }
+      g.stroke();
+    }
+    g.restore();
+  }
+
+  // Helmer & Åsta: small cheering luchadores
+  function drawKid(g, x, y, s, mask, trim, sign, name, bounce, flip) {
+    g.save(); g.translate(x, y - Math.abs(Math.sin(bounce)) * 10 * s); g.scale(s, s);
+    g.strokeStyle = C.tinta; g.lineWidth = 2.5;
+    // sign on a stick, raised
+    const lift = Math.abs(Math.sin(bounce)) * 6;
+    g.fillStyle = C.strawDark; g.fillRect(-2, -128 - lift, 4, 60);
+    g.save(); g.translate(0, -150 - lift); g.rotate(flip * 0.06 + Math.sin(bounce) * .05);
+    g.fillStyle = C.papel; roundRect(g, -52, -22, 104, 40, 4); g.fill(); g.stroke();
+    g.fillStyle = C.rosa; g.font = "13px Bungee, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+    const lines = sign.split("\n"); lines.forEach((l, i) => g.fillText(l, 0, -2 + (i - (lines.length - 1) / 2) * 15));
+    g.restore();
+    // body
+    g.fillStyle = mask; roundRect(g, -17, -64, 34, 44, 10); g.fill(); g.stroke();
+    g.fillStyle = C.tinta; g.fillRect(-13, -22, 10, 22); g.fillRect(3, -22, 10, 22);
+    // arms: one holds the stick, one waves
+    g.strokeStyle = C.skin; g.lineWidth = 7; g.lineCap = "round";
+    g.beginPath(); g.moveTo(flip * 14, -58); g.lineTo(2, -84 - lift); g.stroke();
+    const wv = Math.sin(bounce * 2) * .5;
+    g.beginPath(); g.moveTo(-flip * 14, -58); g.lineTo(-flip * (28 + wv * 6), -88 + wv * 8); g.stroke();
+    // masked head
+    g.fillStyle = mask; g.strokeStyle = C.tinta; g.lineWidth = 2.5;
+    g.beginPath(); g.ellipse(0, -86, 21, 24, 0, 0, 7); g.fill(); g.stroke();
+    g.fillStyle = trim;
+    for (const sx of [-1, 1]) { g.beginPath(); g.ellipse(sx * 8, -90, 8, 6, sx * -0.4, 0, 7); g.fill(); }
+    g.fillStyle = C.papel; for (const sx of [-1, 1]) { g.beginPath(); g.ellipse(sx * 8, -90, 5, 3.6, sx * -0.4, 0, 7); g.fill(); }
+    g.fillStyle = C.tinta; for (const sx of [-1, 1]) { g.beginPath(); g.arc(sx * 8, -90, 2, 0, 7); g.fill(); }
+    g.fillStyle = trim; g.beginPath(); g.moveTo(0, -110); g.lineTo(5, -98); g.lineTo(0, -94); g.lineTo(-5, -98); g.closePath(); g.fill();
+    g.fillStyle = C.skin; g.beginPath(); g.ellipse(0, -74, 7, 5, 0, 0, Math.PI); g.fill(); // open mouth area
+    g.fillStyle = C.rosaDeep; g.beginPath(); g.ellipse(0, -73, 4, 3, 0, 0, Math.PI); g.fill();
+    // name plate
+    g.fillStyle = C.tinta; roundRect(g, -30, 2, 60, 18, 3); g.fill();
+    g.fillStyle = C.amarillo; g.font = "11px Bungee, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(name, 0, 11.5);
+    g.restore();
+  }
+
+  // ---------------------------------------------------------------- audio
+  const audio = { ctx: null, master: null, music: null, sfx: null, on: true, song: null, voice: null };
+  function initAudio() {
+    if (audio.ctx) { audio.ctx.resume && audio.ctx.resume(); return; }
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      const a = new AC(); audio.ctx = a;
+      audio.master = a.createGain(); audio.master.gain.value = 0.9; audio.master.connect(a.destination);
+      const comp = a.createDynamicsCompressor(); comp.connect(audio.master);
+      audio.music = a.createGain(); audio.music.gain.value = 0.55; audio.music.connect(comp);
+      audio.sfx = a.createGain(); audio.sfx.gain.value = 0.8; audio.sfx.connect(comp);
+      const len = a.sampleRate * 1.5, buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      audio.noise = buf;
+    } catch (e) { audio.ctx = null; }
+  }
+  const SCALE = [0, 2, 4, 5, 7, 9, 11];
+  const deg2midi = (d) => 60 + Math.floor(d / 7) * 12 + SCALE[((d % 7) + 7) % 7];
+  const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
+  const CHORDS = { C: [48, [60, 64, 67]], G7: [43, [55, 59, 62, 65]], F: [41, [57, 60, 65]], C7: [48, [58, 64, 67]] };
+
+  function trumpet(out, f, t, dur, vol) {
+    const a = audio.ctx, g = a.createGain(), lp = a.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.setValueAtTime(900, t); lp.frequency.linearRampToValueAtTime(2600, t + 0.05); lp.frequency.exponentialRampToValueAtTime(1500, t + dur);
+    lp.Q.value = 2;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.025);
+    g.gain.setValueAtTime(vol * 0.8, t + Math.max(0.03, dur - 0.06)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.05);
+    const vib = a.createOscillator(), vg = a.createGain(); vib.frequency.value = 5.6; vg.gain.setValueAtTime(0, t); vg.gain.linearRampToValueAtTime(f * 0.006, t + Math.min(dur, 0.25)); vib.connect(vg);
+    for (const det of [-5, 6]) {
+      const o = a.createOscillator(); o.type = "sawtooth"; o.frequency.value = f; o.detune.value = det; vg.connect(o.frequency);
+      o.connect(lp); o.start(t); o.stop(t + dur + 0.08);
+    }
+    vib.start(t); vib.stop(t + dur + 0.08);
+    lp.connect(g); g.connect(out);
+  }
+  function pluck(out, f, t, vol, decay = 0.22, type = "triangle") {
+    const a = audio.ctx, o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+    o.connect(g); g.connect(out); o.start(t); o.stop(t + decay + 0.02);
+  }
+  // song = { bpm, melody:[[deg,beats]...], bars:[chord...], barStart, beatsPerBar, length, lyrics:[[beat,text]] }
+  function playSong(song, { loop = false, onLyric, onEnd } = {}) {
+    if (!audio.ctx) return;
+    stopSong();
+    const a = audio.ctx, bus = a.createGain(); bus.gain.value = 1; bus.connect(audio.music);
+    const handle = { bus, timers: [], stopped: false };
+    audio.song = handle;
+    const spb = 60 / song.bpm;
+    const schedule = (t0) => {
+      let b = 0;
+      for (const [d, beats] of song.melody) {
+        if (d !== null) {
+          const dur = beats * spb * 0.92;
+          trumpet(bus, mtof(deg2midi(d)), t0 + b * spb, dur, 0.085);
+          trumpet(bus, mtof(deg2midi(d - 2)), t0 + b * spb + 0.008, dur, 0.05); // mariachi third below
+        }
+        b += beats;
+      }
+      song.bars.forEach((ch, i) => {
+        const [root, notes] = CHORDS[ch];
+        const bt = t0 + (song.barStart + i * song.beatsPerBar) * spb;
+        pluck(bus, mtof(root), bt, 0.32, 0.35);                      // guitarrón "oom"
+        for (let k = 1; k < song.beatsPerBar; k++) {                  // vihuela "pah" strums
+          notes.forEach((n, j) => pluck(bus, mtof(n), bt + k * spb + j * 0.012, 0.06, 0.16, "square"));
+        }
+      });
+      if (onLyric && song.lyrics) {
+        song.lyrics.forEach(([beat, txt]) => {
+          const ms = (t0 + beat * spb - a.currentTime) * 1000;
+          handle.timers.push(setTimeout(() => !handle.stopped && onLyric(txt), Math.max(0, ms)));
+        });
+      }
+      const endMs = (t0 + song.length * spb - a.currentTime) * 1000;
+      handle.timers.push(setTimeout(() => {
+        if (handle.stopped) return;
+        if (loop) schedule(t0 + song.length * spb);
+        else { onEnd && onEnd(); }
+      }, Math.max(0, endMs - (loop ? 400 : 0))));
+    };
+    schedule(a.currentTime + 0.08);
+    return handle;
+  }
+  function stopSong() {
+    const h = audio.song; if (!h) return;
+    h.stopped = true; h.timers.forEach(clearTimeout);
+    try { const t = audio.ctx.currentTime; h.bus.gain.setValueAtTime(h.bus.gain.value, t); h.bus.gain.linearRampToValueAtTime(0, t + 0.3); setTimeout(() => h.bus.disconnect(), 600); } catch (e) {}
+    audio.song = null;
+  }
+
+  // La Cucaracha (traditional) — 3/4 with a pickup; degrees in C major (0 = C4)
+  const CUCARACHA = {
+    bpm: 196, beatsPerBar: 3, barStart: 1.5, length: 36,
+    melody: [
+      [4,.5],[4,.5],[4,.5],[7,1.5],[9,3],
+      [4,.5],[4,.5],[4,.5],[7,1.5],[9,3],
+      [7,.5],[7,.5],[6,.5],[6,.5],[5,.5],[5,.5],[4,3],
+      [4,.5],[4,.5],[4,.5],[6,1.5],[8,3],
+      [4,.5],[4,.5],[4,.5],[6,1.5],[8,3],
+      [11,.5],[12,.5],[11,.5],[10,.5],[9,.5],[8,.5],[7,3]
+    ],
+    bars: ["C","C","C","C","C","G7","G7","G7","G7","G7","G7","C"]
+  };
+  // Cumpleaños feliz — 3/4, pickup of one beat
+  const CUMPLE = {
+    bpm: 112, beatsPerBar: 3, barStart: 1, length: 25,
+    melody: [
+      [4,.75],[4,.25],
+      [5,1],[4,1],[7,1],
+      [6,2],[4,.75],[4,.25],
+      [5,1],[4,1],[8,1],
+      [7,2],[4,.75],[4,.25],
+      [11,1],[9,1],[7,1],
+      [6,1],[5,1],[10,.75],[10,.25],
+      [9,1],[7,1],[8,1],
+      [7,3]
+    ],
+    bars: ["C","G7","G7","C","C7","F","C","C"],
+    lyrics: [[0,"Cumpleaños feliz"],[6,"te deseamos a ti"],[12,"cumpleaños, Tante Gine"],[18,"cumpleaños feliz"],[24.5,"¡Te queremos! ♥"]]
+  };
+
+  function noiseHit(t, freq, q, vol, dur) {
+    const a = audio.ctx, s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+    s.buffer = audio.noise; f.type = "bandpass"; f.frequency.value = freq; f.Q.value = q;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(audio.sfx); s.start(t, Math.random()); s.stop(t + dur + 0.02);
+  }
+  const sfx = {
+    hit(big) {
+      if (!audio.ctx || !audio.on) return; const a = audio.ctx, t = a.currentTime;
+      noiseHit(t, big ? 500 : 900, 1.2, big ? 0.9 : 0.55, big ? 0.25 : 0.12);
+      const o = a.createOscillator(), g = a.createGain(); o.type = "sine";
+      o.frequency.setValueAtTime(big ? 180 : 150, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.18);
+      g.gain.setValueAtTime(big ? 0.9 : 0.6, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+      o.connect(g); g.connect(audio.sfx); o.start(t); o.stop(t + 0.25);
+    },
+    pop() {
+      if (!audio.ctx || !audio.on) return; const a = audio.ctx, t = a.currentTime, o = a.createOscillator(), g = a.createGain();
+      o.type = "sine"; o.frequency.setValueAtTime(700, t); o.frequency.exponentialRampToValueAtTime(1500, t + 0.09);
+      g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.15); o.connect(g); g.connect(audio.sfx); o.start(t); o.stop(t + 0.16);
+    },
+    cheer(dur = 1.6, vol = 0.22) {
+      if (!audio.ctx || !audio.on) return; const a = audio.ctx, t = a.currentTime, s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+      s.buffer = audio.noise; s.loop = true; f.type = "bandpass"; f.frequency.value = 1300; f.Q.value = 0.6;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      s.connect(f); f.connect(g); g.connect(audio.sfx); s.start(t); s.stop(t + dur + 0.05);
+    },
+    bell(times = 3) {
+      if (!audio.ctx || !audio.on) return; const a = audio.ctx;
+      for (let i = 0; i < times; i++) {
+        const t = a.currentTime + i * 0.32;
+        [1, 2.76, 5.4].forEach((m, k) => { const o = a.createOscillator(), g = a.createGain(); o.frequency.value = 1180 * m; g.gain.setValueAtTime(0.25 / (k + 1), t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9 / (k + 1)); o.connect(g); g.connect(audio.sfx); o.start(t); o.stop(t + 1); });
+      }
+    },
+    whoosh() {
+      if (!audio.ctx || !audio.on) return; const a = audio.ctx, t = a.currentTime, s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+      s.buffer = audio.noise; f.type = "bandpass"; f.Q.value = 3; f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(3000, t + 0.4);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.2); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      s.connect(f); f.connect(g); g.connect(audio.sfx); s.start(t); s.stop(t + 0.55);
+    }
+  };
+  function say(text) {
+    if (!audio.on) return;
+    try {
+      const ss = window.speechSynthesis; if (!ss) return;
+      ss.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      const v = ss.getVoices().find((v) => /es[-_]MX/i.test(v.lang)) || ss.getVoices().find((v) => /^es/i.test(v.lang));
+      if (v) u.voice = v; u.lang = v ? v.lang : "es-MX"; u.rate = 1.02; u.pitch = 0.85; u.volume = 1;
+      ss.speak(u);
+    } catch (e) {}
+  }
+  function setSound(on) {
+    audio.on = on;
+    $("sound").textContent = on ? "Lyd: på" : "Lyd: av";
+    $("sound").setAttribute("aria-pressed", String(on));
+    if (audio.master) audio.master.gain.value = on ? 0.9 : 0;
+    if (!on) { try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {} }
+  }
+  $("sound").addEventListener("click", (e) => { e.stopPropagation(); setSound(!audio.on); });
+
+  // ---------------------------------------------------------------- game state
+  const MAX_HP = 42;
+  const MOVES = ["¡PLANCHA!", "¡TOPE!", "¡HURACANRANA!", "¡LA TAPATÍA!", "¡TIJERA!", "¡DROPKICK!", "¡SUPLEX!", "¡LA MAGISTRAL!", "¡CODAZO!", "¡PATADA VOLADORA!", "¡LA DE A CABALLO!", "¡CRUCETA!"];
+  const CHEERS_H = ["¡Vamos, Tante Gine!", "Heia tante!", "Du er best!", "¡Dale, dale, dale!", "Slå hardere!", "Tante Gine nr. 1!"];
+  const CHEERS_A = ["¡Te queremos!", "Heia Gine!", "Supertante!", "¡Olé, olé!", "Vi er glad i deg!", "¡Viva la tía!"];
+
+  let state = "title";
+  let hp = MAX_HP, superMeter = 0, superReady = false, lastHit = -9, combo = 0;
+  let photosOut = 0, released = 0, photoQueue = [], showingPhoto = false;
+  let order = [];
+  // physics
+  let pinAng = 0, pinVel = 0, pinSpin = 0, pinSpinVel = 0, hitFlash = 0, shake = 0;
+  let gineJump = 0, gineArms = 0, gineSpin = 0, gineSquash = 0, attackT = 0, superT = 0;
+  const particles = [], popups = [], bubbles = [];
+  let kidBounceH = 0, kidBounceA = 0, nextCheer = 3, burstDone = false;
+  let time = 0, hudH = 0;
+  function measureHud() { const h = $("hud"); hudH = h.hidden ? 0 : h.offsetHeight; $("stage").style.setProperty("--hud-h", (hudH + 4) + "px"); }
+
+  function layout() {
+    const ground = H - Math.max(40, 46 * S);
+    const gineX = W / 2;
+    const pivot = { x: W / 2, y: -10 };
+    const pinRestY = Math.max(150 * S + 110, ground - 395 * S);
+    const L = pinRestY - pivot.y;
+    const kidsDX = Math.min(W * 0.36, 260 * S + 60);
+    return { ground, gineX, pivot, L, kidsDX };
+  }
+  function pinataPos() {
+    const { pivot, L } = layout();
+    return { x: pivot.x + Math.sin(pinAng) * L, y: pivot.y + Math.cos(pinAng) * L };
+  }
+
+  function resetGame() {
+    hp = MAX_HP; superMeter = 0; superReady = false; combo = 0; lastHit = -9;
+    photosOut = 0; released = 0; photoQueue = []; showingPhoto = false;
+    pinAng = 0.25; pinVel = 0; pinSpin = 0; pinSpinVel = 0; hitFlash = 0; shake = 0;
+    gineJump = 0; gineArms = 0; gineSpin = 0; attackT = 0; superT = 0; burstDone = false;
+    particles.length = popups.length = bubbles.length = 0;
+    nextCheer = 2.5;
+    order = photoSrc.map((s, i) => i);
+    for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    document.querySelectorAll(".polaroid").forEach((n) => n.remove());
+    $("dim").classList.remove("on");
+    updateHud();
+  }
+
+  function updateHud() {
+    $("hp").firstElementChild.style.transform = `scaleX(${hp / MAX_HP})`;
+    $("hp-num").textContent = `${hp} / ${MAX_HP}`;
+    const love = Math.round(photosOut / PHOTO_COUNT * 100);
+    $("love").firstElementChild.style.transform = `scaleX(${photosOut / PHOTO_COUNT})`;
+    $("love-num").textContent = `${love} %`;
+    $("super").firstElementChild.style.transform = `scaleX(${superMeter})`;
+    $("super-wrap").classList.toggle("ready", superReady);
+    $("super-label").textContent = superReady ? "¡Supertrekk klart, slå nå!" : "Supertante-måler";
+    $("album").textContent = `Minner ${photosOut} / ${PHOTO_COUNT}`;
+  }
+
+  // ---------------------------------------------------------------- input
+  function attack() {
+    if (state !== "fight" || showingPhoto) return; // the fight pauses while a memory is on screen
+    initAudio();
+    const isSuper = superReady;
+    const dmg = isSuper ? 4 : 1;
+    const now = time;
+    combo = now - lastHit < 0.75 ? combo + 1 : 1;
+    lastHit = now;
+    attackT = 0.22; gineJump = 1;
+    const p = pinataPos();
+    pinVel += (Math.random() < 0.5 ? -1 : 1) * (isSuper ? 3.2 : 1.4 + Math.random() * 0.6);
+    pinSpinVel += (Math.random() - 0.5) * (isSuper ? 14 : 5);
+    hitFlash = 0.14; shake = reduceMotion ? 0 : (isSuper ? 14 : 5);
+    const n = isSuper ? 40 : 10;
+    for (let i = 0; i < n; i++) spawnParticle(p.x, p.y + 20 * S, isSuper);
+    if (isSuper) {
+      superReady = false; superMeter = 0; superT = 0.9; gineSpin = Math.PI * 2;
+      popText("¡SUPERTANTE-SMELL!", p.x, p.y + 90 * S, C.amarillo, 1.4);
+      sfx.whoosh(); sfx.hit(true); sfx.cheer(1.4, 0.25);
+      kidBounceH = kidBounceA = 0; bubble(Math.random() < .5 ? "H" : "A", "WOOOW!");
+    } else {
+      popText(MOVES[Math.floor(Math.random() * MOVES.length)], p.x + (Math.random() - .5) * 120 * S, p.y + 70 * S, C.papel, 1);
+      sfx.hit(false);
+      superMeter = Math.min(1, superMeter + (combo > 1 ? 0.14 : 0.1));
+      if (superMeter >= 1) { superReady = true; bubble("H", "Supertrekk!"); }
+    }
+    const before = hp;
+    hp = Math.max(0, hp - dmg);
+    // photos released proportional to damage: the last one comes out with the knockout
+    const due = (h) => h === 0 ? PHOTO_COUNT : Math.floor((MAX_HP - h) / MAX_HP * (PHOTO_COUNT - 1));
+    for (let k = due(before); k < due(hp); k++) queuePhoto();
+    updateHud();
+    if (hp === 0) burst(); else pumpPhotos(180);
+  }
+
+  // ---------------------------------------------------------------- photo moments
+  // Each memory gets its own moment: the fight pauses, the photo sits centre stage, then files itself in the album.
+  const PHOTO_IN = 550, PHOTO_HOLD = 3000, PHOTO_OUT = 500;
+  function queuePhoto() {
+    if (released >= PHOTO_COUNT) return;
+    photoQueue.push(order[released++]);
+  }
+  function pumpPhotos(delay) {
+    if (showingPhoto || !photoQueue.length) return;
+    showingPhoto = true;
+    $("tapnote").hidden = true;
+    setTimeout(showPhoto, delay);
+  }
+  function endMoment() {
+    showingPhoto = false;
+    $("dim").classList.remove("on");
+    if (state === "fight") $("tapnote").hidden = false;
+  }
+  function showPhoto() {
+    if (!photoQueue.length) { endMoment(); return; }
+    const idx = photoQueue.shift();
+    const n = photosOut + 1;
+    // size the print to the photo's own shape, as large as the screen allows
+    const nat = photoImgs[idx], nw = nat.naturalWidth || 4, nh = nat.naturalHeight || 3;
+    const maxW = Math.min(W - 52, 460), maxH = Math.min((H - hudH) * 0.62, 540);
+    const k = Math.min(maxW / nw, maxH / nh);
+    const fig = document.createElement("figure"); fig.className = "polaroid";
+    const img = document.createElement("img"); img.src = photoSrc[idx]; img.alt = "";
+    img.style.width = Math.round(nw * k) + "px"; img.style.height = Math.round(nh * k) + "px";
+    const cap = document.createElement("figcaption"); cap.textContent = `Minne ${n} av ${PHOTO_COUNT} · ${CAPTIONS[(n - 1) % CAPTIONS.length]}`;
+    const timer = document.createElement("i"); timer.className = "timer";
+    fig.append(img, cap, timer); $("stage").appendChild(fig);
+    $("dim").classList.add("on");
+    const p = pinataPos();
+    const fw = fig.offsetWidth, fh = fig.offsetHeight;
+    const cx = W / 2 - fw / 2;
+    const cy = Math.max(hudH + 8, hudH + (H - hudH - fh) / 2 - 16);
+    const albumR = $("album").getBoundingClientRect(), stR = $("stage").getBoundingClientRect();
+    const ax = albumR.left - stR.left + albumR.width / 2 - fw / 2, ay = albumR.top - stR.top + albumR.height / 2 - fh / 2;
+    const rot = (Math.random() - 0.5) * 7;
+    const total = PHOTO_IN + PHOTO_HOLD + PHOTO_OUT;
+    sfx.pop();
+    fig.animate([
+      { transform: `translate(${p.x - fw / 2}px, ${p.y - fh / 2}px) scale(.12) rotate(${rot * 5}deg)`, opacity: 0.4, easing: "cubic-bezier(.2,.9,.3,1.25)" },
+      { transform: `translate(${cx}px, ${cy}px) scale(1) rotate(${rot}deg)`, opacity: 1, offset: PHOTO_IN / total, easing: "ease-in-out" },
+      { transform: `translate(${cx}px, ${cy - 5}px) scale(1.015) rotate(${rot * 0.6}deg)`, opacity: 1, offset: (PHOTO_IN + PHOTO_HOLD) / total, easing: "cubic-bezier(.5,0,.8,.4)" },
+      { transform: `translate(${ax}px, ${ay}px) scale(.08) rotate(0deg)`, opacity: 0.5 }
+    ], { duration: total, fill: "forwards" });
+    timer.animate([{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }], { duration: PHOTO_HOLD, delay: PHOTO_IN, fill: "both" });
+    setTimeout(() => {
+      photosOut++; updateHud();
+      if (photosOut % 5 === 0) bubble(photosOut % 10 ? "A" : "H", photosOut % 10 ? "Glad i deg!" : "Så fint bilde!");
+    }, PHOTO_IN + PHOTO_HOLD + PHOTO_OUT * 0.6);
+    // timers rather than onfinish, so a throttled animation can never stall the game
+    setTimeout(() => { fig.remove(); showPhoto(); }, total + 40);
+  }
+
+  function spawnParticle(x, y, big) {
+    const kinds = ["candy", "candy", "confetti", "confetti", "heart"];
+    const kind = kinds[Math.floor(Math.random() * kinds.length)];
+    const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.6, sp = (big ? 520 : 320) * (0.4 + Math.random()) * S;
+    particles.push({
+      kind, x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60 * S, rot: Math.random() * 6, vr: (Math.random() - .5) * 12,
+      life: 0, max: 2.4 + Math.random() * 1.6,
+      col: [C.amarillo, C.turquesa, C.rosa, C.verde, C.naranja, C.azul, C.papel][Math.floor(Math.random() * 7)],
+      size: (kind === "confetti" ? 7 : 10) * S * (0.8 + Math.random() * 0.6)
+    });
+  }
+  function popText(txt, x, y, col, scale) { popups.push({ txt, x, y, col, scale, life: 0, max: 0.9 }); }
+  function bubble(who, txt) {
+    if (who === "H") kidBounceH = 0; else kidBounceA = 0;
+    for (let i = bubbles.length - 1; i >= 0; i--) if (bubbles[i].who === who) bubbles.splice(i, 1);
+    bubbles.push({ who, txt, life: 0, max: 2.2 });
+  }
+
+  function burst() {
+    if (burstDone) return; burstDone = true;
+    state = "burst";
+    const p = pinataPos();
+    for (let i = 0; i < 160; i++) spawnParticle(p.x, p.y, true);
+    shake = reduceMotion ? 0 : 22;
+    sfx.hit(true); sfx.cheer(3, 0.32); sfx.bell(3);
+    stopSong();
+    popText("¡KO!", p.x, p.y, C.amarillo, 2.2);
+    bubble("H", "¡GANADORA!"); bubble("A", "¡Feliz cumpleaños!");
+    $("tapnote").hidden = true;
+    // let the knockout land, then show the last memories before the finale
+    setTimeout(() => pumpPhotos(0), 1700);
+    const waitPhotos = () => {
+      if (photoQueue.length || showingPhoto) { setTimeout(waitPhotos, 250); return; }
+      setTimeout(showFinale, 900);
+    };
+    setTimeout(waitPhotos, 1800);
+  }
+
+  // ---------------------------------------------------------------- screens
+  function startIntro() {
+    initAudio();
+    resetGame();
+    $("stage").classList.remove("at-finale");
+    $("poster").hidden = true; $("finale").hidden = true; $("sound").hidden = false;
+    state = "intro";
+    const lines = [
+      ["¡Damas y caballeros!", "Damas y caballeros"],
+      ["En esta esquina…", "En esta esquina"],
+      ["con 42 años de experiencia…", "con cuarenta y dos años de experiencia"],
+      ["¡la Supertante… GINE!", "la Supertante... Giiiine!"],
+      ["Y en la otra esquina…", "Y en la otra esquina"],
+      ["¡El Piñatón!", "El Piñatón!"]
+    ];
+    const ann = $("announce"); ann.hidden = false;
+    let i = 0, timer = null;
+    const finish = () => {
+      clearTimeout(timer); ann.hidden = true; ann.onclick = null;
+      try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+      startFight();
+    };
+    const step = () => {
+      if (i >= lines.length) { finish(); return; }
+      const [txt, spoken] = lines[i];
+      $("announce-line").textContent = txt;
+      $("announce-line").animate([{ transform: "scale(.6)", opacity: 0 }, { transform: "scale(1.06)", opacity: 1, offset: .6 }, { transform: "scale(1)" }], { duration: 380, easing: "ease-out" });
+      say(spoken);
+      if (i === 3) sfx.cheer(2, 0.3);
+      if (i === 5) sfx.cheer(1, 0.12);
+      i++; timer = setTimeout(step, i === 4 ? 2200 : 1500);
+    };
+    ann.onclick = (e) => { e.stopPropagation(); finish(); };
+    playSong(CUCARACHA, { loop: true });
+    step();
+  }
+  function startFight() {
+    state = "fight";
+    $("hud").hidden = false; $("album").hidden = false; $("tapnote").hidden = false;
+    measureHud();
+    sfx.bell(3);
+    popText("¡A LUCHAR!", W / 2, H * 0.48, C.amarillo, 1.8);
+    if (!audio.song) playSong(CUCARACHA, { loop: true });
+    setTimeout(() => bubble("H", "¡Vamos, Tante Gine!"), 700);
+    setTimeout(() => bubble("A", "Heia tante!"), 1500);
+  }
+  function showFinale() {
+    state = "finale";
+    $("stage").classList.add("at-finale");
+    $("hud").hidden = true; $("album").hidden = true; $("tapnote").hidden = true;
+    const f = $("finale"); f.hidden = false; f.scrollTop = 0;
+    drawPicado($("picado2"));
+    buildGallery();
+    sing();
+  }
+  function sing() {
+    $("lyric").textContent = "";
+    playSong(CUMPLE, {
+      onLyric: (txt) => {
+        const el = $("lyric"); el.textContent = txt;
+        el.animate([{ transform: "translateY(8px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 300, easing: "ease-out" });
+      },
+      onEnd: () => { sfx.cheer(2.4, 0.3); setTimeout(() => state === "finale" && playSong(CUCARACHA, { loop: true }), 2200); }
+    });
+  }
+  function buildGallery() {
+    const gal = $("gallery"); if (gal.childElementCount) return;
+    photoSrc.forEach((src, i) => {
+      const b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-label", `Vis minne ${i + 1} i stort format`);
+      const im = document.createElement("img"); im.src = src; im.alt = ""; im.loading = "lazy";
+      b.appendChild(im); b.addEventListener("click", () => openLightbox(src)); gal.appendChild(b);
+    });
+  }
+  function openLightbox(src) { const lb = $("lightbox"); lb.querySelector("img").src = src; lb.hidden = false; }
+  $("lightbox").addEventListener("click", () => { $("lightbox").hidden = true; });
+
+  $("start").addEventListener("click", (e) => { e.stopPropagation(); startIntro(); });
+  $("play-again").addEventListener("click", () => { stopSong(); startIntro(); });
+  $("sing-again").addEventListener("click", () => { initAudio(); sing(); });
+  $("stage").addEventListener("pointerdown", (e) => {
+    if (state !== "fight") return;
+    if (e.target.closest("button")) return;
+    e.preventDefault(); attack();
+  });
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") $("lightbox").hidden = true;
+    if (state === "fight" && (e.code === "Space" || e.key === "Enter")) { e.preventDefault(); if (!e.repeat) attack(); }
+  });
+
+  // ---------------------------------------------------------------- loop
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; time += dt;
+    update(dt); render();
+    requestAnimationFrame(frame);
+  }
+  function update(dt) {
+    // pendulum
+    const k = 9.5 / Math.max(1, layout().L / 220);
+    pinVel += -k * Math.sin(pinAng) * dt; pinVel *= Math.pow(0.55, dt); pinAng += pinVel * dt;
+    if (state === "title" || state === "intro") pinAng = Math.sin(time * 1.4) * 0.12;
+    pinSpinVel += -pinSpin * 18 * dt; pinSpinVel *= Math.pow(0.08, dt); pinSpin += pinSpinVel * dt;
+    hitFlash = Math.max(0, hitFlash - dt); shake *= Math.pow(0.002, dt);
+    // Gine
+    attackT = Math.max(0, attackT - dt);
+    const target = attackT > 0 ? 1 : 0;
+    gineArms += (target - gineArms) * Math.min(1, dt * 22);
+    gineJump = Math.max(0, gineJump - dt * 4.2);
+    gineSpin = Math.max(0, gineSpin - dt * 9);
+    superT = Math.max(0, superT - dt);
+    gineSquash = attackT > 0.15 ? -0.4 : Math.max(0, gineSquash - dt * 4);
+    // kids
+    kidBounceH += dt * 7; kidBounceA += dt * 7;
+    if (state === "fight" && !showingPhoto) {
+      nextCheer -= dt;
+      if (nextCheer <= 0) {
+        const who = Math.random() < 0.5 ? "H" : "A";
+        const list = who === "H" ? CHEERS_H : CHEERS_A;
+        bubble(who, list[Math.floor(Math.random() * list.length)]);
+        nextCheer = 2.8 + Math.random() * 2.5;
+      }
+    }
+    // particles
+    const { ground } = layout();
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i]; p.life += dt;
+      p.vy += 900 * S * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+      if (p.kind === "confetti") { p.vx *= Math.pow(0.3, dt); p.vy = Math.min(p.vy, 120 * S); }
+      if (p.y > ground - 4) { p.y = ground - 4; p.vy *= -0.3; p.vx *= 0.6; p.vr *= 0.5; }
+      if (p.life > p.max) particles.splice(i, 1);
+    }
+    for (let i = popups.length - 1; i >= 0; i--) { popups[i].life += dt; if (popups[i].life > popups[i].max) popups.splice(i, 1); }
+    for (let i = bubbles.length - 1; i >= 0; i--) { bubbles[i].life += dt; if (bubbles[i].life > bubbles[i].max) bubbles.splice(i, 1); }
+  }
+
+  function drawBackground() {
+    // the real Parque México photo (Foro Lindbergh), cover-fit, with a warm grade
+    if (parkImg.complete && parkImg.naturalWidth) {
+      const iw = parkImg.naturalWidth, ih = parkImg.naturalHeight;
+      const sc = Math.max(W / iw, H / ih) * 1.04;
+      const dw = iw * sc, dh = ih * sc;
+      // keep the Foro Lindbergh pergola (≈46% across the photo) behind the ring
+      const dx = Math.min(0, Math.max(W - dw, W / 2 - dw * 0.46)), dy = (H - dh) * 0.55;
+      ctx.drawImage(parkImg, dx, dy, dw, dh);
+    } else {
+      ctx.fillStyle = "#8fd3ee"; ctx.fillRect(0, 0, W, H);
+    }
+    const gr = ctx.createLinearGradient(0, 0, 0, H);
+    gr.addColorStop(0, "rgba(35,26,21,.35)"); gr.addColorStop(0.35, "rgba(35,26,21,0)"); gr.addColorStop(0.75, "rgba(35,26,21,.15)"); gr.addColorStop(1, "rgba(35,26,21,.7)");
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
+  }
+  function drawRing(ground) {
+    // a lucha ring apron and ropes set up on the plaza
+    const top = ground - 70 * S;
+    ctx.fillStyle = C.tinta; ctx.fillRect(0, ground, W, H - ground);
+    ctx.fillStyle = C.rosa; ctx.fillRect(0, ground, W, 10 * S);
+    ctx.fillStyle = "rgba(255,244,224,.12)";
+    for (let x = -20; x < W; x += 34 * S) { ctx.beginPath(); ctx.moveTo(x, ground + 10 * S); ctx.lineTo(x + 16 * S, ground + 10 * S); ctx.lineTo(x + 8 * S, H); ctx.fill(); }
+    // posts
+    const postX = [Math.max(10, W / 2 - Math.min(W * 0.47, 420 * S)), Math.min(W - 10, W / 2 + Math.min(W * 0.47, 420 * S))];
+    const ropes = [C.rosa, C.papel, C.turquesa];
+    ropes.forEach((c, i) => {
+      const y = top + i * 22 * S;
+      ctx.strokeStyle = C.tinta; ctx.lineWidth = 7 * S; ctx.beginPath(); ctx.moveTo(postX[0], y); ctx.quadraticCurveTo(W / 2, y + 7 * S, postX[1], y); ctx.stroke();
+      ctx.strokeStyle = c; ctx.lineWidth = 4 * S; ctx.beginPath(); ctx.moveTo(postX[0], y); ctx.quadraticCurveTo(W / 2, y + 7 * S, postX[1], y); ctx.stroke();
+    });
+    postX.forEach((x) => { ctx.fillStyle = C.amarillo; ctx.strokeStyle = C.tinta; ctx.lineWidth = 3; ctx.fillRect(x - 7 * S, top - 14 * S, 14 * S, ground - top + 14 * S); ctx.strokeRect(x - 7 * S, top - 14 * S, 14 * S, ground - top + 14 * S); });
+  }
+  function drawParticle(p) {
+    const fade = Math.min(1, (p.max - p.life) / 0.5);
+    ctx.save(); ctx.globalAlpha = fade; ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+    if (p.kind === "confetti") { ctx.fillStyle = p.col; ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2); }
+    else if (p.kind === "heart") {
+      ctx.fillStyle = C.rosa; ctx.strokeStyle = C.papel; ctx.lineWidth = 1.5; const s = p.size / 10;
+      ctx.beginPath(); ctx.moveTo(0, 4 * s); ctx.bezierCurveTo(-10 * s, -3 * s, -5 * s, -10 * s, 0, -5 * s); ctx.bezierCurveTo(5 * s, -10 * s, 10 * s, -3 * s, 0, 4 * s); ctx.fill(); ctx.stroke();
+    } else {
+      // wrapped candy
+      const s = p.size;
+      ctx.fillStyle = p.col; ctx.strokeStyle = C.tinta; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(-s * .5, 0); ctx.lineTo(-s, -s * .4); ctx.lineTo(-s, s * .4); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(s * .5, 0); ctx.lineTo(s, -s * .4); ctx.lineTo(s, s * .4); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(0, 0, s * .55, s * .42, 0, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.beginPath(); ctx.moveTo(-s * .2, -s * .3); ctx.lineTo(s * .1, s * .3); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function drawBubble(x, y, txt, life, max, alignRight) {
+    const a = Math.min(1, life / 0.15, (max - life) / 0.3);
+    ctx.save(); ctx.globalAlpha = Math.max(0, a);
+    ctx.font = `${Math.round(13 * Math.max(S, 0.85))}px Bungee, sans-serif`;
+    const tw = ctx.measureText(txt).width, pad = 9, bw = tw + pad * 2, bh = 30 * Math.max(S, 0.85);
+    let bx = x - bw / 2; bx = Math.max(16, Math.min(W - 16 - bw, bx));
+    const by = y - bh;
+    ctx.fillStyle = C.papel; ctx.strokeStyle = C.tinta; ctx.lineWidth = 2.5;
+    roundRect(ctx, bx, by, bw, bh, 8); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 6, by + bh - 1); ctx.lineTo(x + (alignRight ? 6 : -2), by + bh + 10); ctx.lineTo(x + 8, by + bh - 1); ctx.fillStyle = C.papel; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = C.rosa; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(txt, bx + bw / 2, by + bh / 2 + 1);
+    ctx.restore();
+  }
+
+  function render() {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.save();
+    if (shake > 0.3) ctx.translate((Math.random() - .5) * shake, (Math.random() - .5) * shake);
+    drawBackground();
+    paintPicado(ctx, -10, (state === "title" ? 6 : hudH + 6), W + 20, Math.max(28, 38 * S), time);
+    const L = layout();
+    const { ground, gineX } = L;
+    drawRing(ground);
+
+    // rope + piñata
+    const p = pinataPos();
+    if (!burstDone) {
+      ctx.strokeStyle = C.tinta; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(L.pivot.x, L.pivot.y); ctx.lineTo(p.x, p.y - 40 * S); ctx.stroke();
+      ctx.strokeStyle = C.strawDark; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(L.pivot.x, L.pivot.y); ctx.lineTo(p.x, p.y - 40 * S); ctx.stroke();
+      drawPinata(ctx, p.x, p.y, S, pinAng * -0.6 + pinSpin, 1 - hp / MAX_HP, time, hitFlash);
+    }
+
+    // kids
+    const kidY = ground - 6 * S;
+    const ks = S * 0.92;
+    drawKid(ctx, W / 2 - L.kidsDX, kidY, ks, C.azul, C.amarillo, "TANTE GINE\nNR. 1", "HELMER", state === "fight" || state === "burst" ? kidBounceH : time * 2, 1);
+    drawKid(ctx, W / 2 + L.kidsDX, kidY, ks, C.rosa, C.turquesa, "¡TE\nQUEREMOS!", "ÅSTA", state === "fight" || state === "burst" ? kidBounceA : time * 2 + 1, -1);
+
+    // Gine
+    const jump = Math.sin(Math.min(1, gineJump) * Math.PI) * 70 * S + (superT > 0 ? Math.sin(superT / 0.9 * Math.PI) * 60 * S : 0);
+    const idle = state === "burst" ? Math.abs(Math.sin(time * 6)) * 18 * S : Math.sin(time * 3) * 2 * S;
+    ctx.fillStyle = "rgba(35,26,21,.45)"; ctx.beginPath(); ctx.ellipse(gineX, ground - 2, 46 * S * (1 - jump / (300 * S)), 9 * S, 0, 0, 7); ctx.fill();
+    drawGine(ctx, gineX, ground - 4 - jump - idle, S, { arms: state === "burst" ? 1 : gineArms, t: time, spin: gineSpin > 0 ? -gineSpin : 0, squash: gineSquash });
+
+    // particles
+    for (const pt of particles) drawParticle(pt);
+    // move popups
+    for (const pp of popups) {
+      const k = pp.life / pp.max, sc = pp.scale * (k < .15 ? k / .15 * 1.15 : 1 + (0.15 - Math.min(.15, k - .15)) * .3);
+      ctx.font = `${Math.round(24 * Math.max(S, .8))}px Bungee, sans-serif`;
+      const half = ctx.measureText(pp.txt).width / 2 * sc + 6;
+      const px = half * 2 > W - 32 ? W / 2 : Math.max(16 + half, Math.min(W - 16 - half, pp.x));
+      ctx.save(); ctx.globalAlpha = Math.min(1, (1 - k) / 0.3); ctx.translate(px, pp.y - k * 40 * S); ctx.rotate(-0.08);
+      ctx.scale(half * 2 > W - 32 ? sc * (W - 32) / (half * 2) : sc, half * 2 > W - 32 ? sc * (W - 32) / (half * 2) : sc);
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.lineJoin = "round"; ctx.lineWidth = 7; ctx.strokeStyle = C.tinta; ctx.strokeText(pp.txt, 0, 0);
+      ctx.fillStyle = pp.col; ctx.fillText(pp.txt, 0, 0);
+      ctx.restore();
+    }
+    // speech bubbles
+    for (const b of bubbles) {
+      const x = b.who === "H" ? W / 2 - L.kidsDX : W / 2 + L.kidsDX;
+      drawBubble(x, kidY - 186 * ks, b.txt, b.life, b.max, b.who === "A");
+    }
+    ctx.restore();
+  }
+
+  // ---------------------------------------------------------------- title previews
+  function paintPreviews() {
+    const pg = $("pv-gine"), pp = $("pv-pinata"); const d = Math.min(window.devicePixelRatio || 1, 2);
+    for (const c of [pg, pp]) { c.width = c.clientWidth * d; c.height = c.clientHeight * d; }
+    const g1 = pg.getContext("2d"), w1 = pg.clientWidth;
+    g1.setTransform(d, 0, 0, d, 0, 0); g1.clearRect(0, 0, w1, w1);
+    drawGine(g1, w1 / 2, w1 - 6, w1 / 285, { arms: 0.85, t: time });
+    const g2 = pp.getContext("2d"), w2 = pp.clientWidth;
+    g2.setTransform(d, 0, 0, d, 0, 0); g2.clearRect(0, 0, w2, w2);
+    drawPinata(g2, w2 / 2, w2 / 2, w2 / 290, Math.sin(time * 1.2) * 0.12, 0, time, 0);
+  }
+  function titleLoop() { if (state === "title") { paintPreviews(); requestAnimationFrame(titleLoop); } }
+
+  paintTalavera();
+  resize();
+  const fontsReady = (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load("20px Bungee"), document.fonts.load("20px 'Bungee Shade'")]).catch(() => {}) : Promise.resolve();
+  fontsReady.then(() => { resize(); });
+  requestAnimationFrame(frame);
+  titleLoop();
+  // stop the poster loop once we leave it
+  $("start").addEventListener("click", () => { state = state === "title" ? "intro" : state; });
+})();
+</script>
+</body>
+</html>
