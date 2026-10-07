@@ -217,6 +217,12 @@
   .gallery button:hover { transform: rotate(0) scale(1.04); }
   .gallery img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
   .finale-actions { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+  /* the family's own edition of «Vi er fem», shown like a book leaning on the poster */
+  .book { margin: 10px 0 0; width: min(68vw, 300px, 44dvh); display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .book button { padding: 0; border: 0; background: none; width: 100%; transform: rotate(1.5deg); transition: transform .2s ease; }
+  .book button:hover { transform: rotate(0) scale(1.02); }
+  .book img { display: block; width: 100%; height: auto; border-radius: 2px 5px 5px 2px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 8px 8px 0 var(--tinta); }
+  .book figcaption { font-family: var(--display); font-size: clamp(16px, 4.4vw, 22px); line-height: 1.2; color: var(--papel); text-shadow: 2px 2px 0 var(--tinta); text-wrap: balance; }
 
   #lightbox { position: absolute; inset: 0; z-index: 20; background: rgba(35,26,21,.92); display: flex; align-items: center; justify-content: center; padding: 16px; }
   #lightbox img { max-width: 100%; max-height: 86%; border: 8px solid #fffdf7; box-shadow: 0 16px 40px rgba(0,0,0,.5); }
@@ -287,9 +293,15 @@
     <div id="lyric" aria-live="polite"></div>
     <article class="love-card">
       <h2>¡Feliz cumpleaños, Supertante Gine!</h2>
-      <p class="message">Du er vår støtte, inspirasjon og den som alltid får oss til å le. Vi er veldig glade i deg <3</p>
+      <p class="message">Du er vår støtte, inspirasjon og den som alltid får oss til å le. Vi er veldig glade i deg &lt;3</p>
       <div class="meterline">Cariñómetro: <b>∞ %</b> (måleren tålte ikke mer)</div>
     </article>
+    <figure class="book">
+      <button type="button" id="book-open" aria-label="Vis omslaget «Vi er fem» i stort format">
+        <img src="img/vi-er-fem.png" width="874" height="1400" loading="lazy" alt="Bokomslag: Matias Pettersen, «Vi er fem». I midten en blomst med fem blader merket H, K, M, S og Å.">
+      </button>
+      <figcaption>Vi er fem, og du er en av oss.</figcaption>
+    </figure>
     <div class="finale-actions">
       <button class="btn ghost" id="sing-again">Spill sangen igjen</button>
       <button class="btn ghost" id="play-again">Ny kamp</button>
@@ -1088,6 +1100,7 @@
   }
   function openLightbox(src) { const lb = $("lightbox"); lb.querySelector("img").src = src; lb.hidden = false; }
   $("lightbox").addEventListener("click", () => { $("lightbox").hidden = true; });
+  $("book-open").addEventListener("click", () => openLightbox("img/vi-er-fem.png"));
 
   $("start").addEventListener("click", (e) => { e.stopPropagation(); startIntro(); });
   $("play-again").addEventListener("click", () => { stopSong(); startIntro(); });
