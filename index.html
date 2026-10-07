@@ -218,18 +218,36 @@
   .gallery img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
   .finale-actions { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
   /* the family's own edition of «Vi er fem», shown like a book leaning on the poster */
-  .book { margin: 10px 0 0; width: min(68vw, 300px, 44dvh); display: flex; flex-direction: column; align-items: center; gap: 16px; }
-  .book button { padding: 0; border: 0; background: none; width: 100%; transform: rotate(1.5deg); transition: transform .2s ease; }
-  .book button:hover { transform: rotate(0) scale(1.02); }
+  .book { margin: 10px 0 0; width: min(84vw, 360px, 56dvh); display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .book-cover { position: relative; width: 100%; transform: rotate(1.5deg); }
   .book img { display: block; width: 100%; height: auto; border-radius: 2px 5px 5px 2px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 8px 8px 0 var(--tinta); }
-  .book figcaption { font-family: var(--display); font-size: clamp(16px, 4.4vw, 22px); line-height: 1.2; color: var(--papel); text-shadow: 2px 2px 0 var(--tinta); text-wrap: balance; }
+  .book figcaption { font-family: var(--display); font-size: clamp(16px, 4.4vw, 22px); line-height: 1.2; color: var(--papel); text-shadow: 2px 2px 0 var(--tinta); text-wrap: balance; min-height: 1.2em; }
+  /* the petals sit over the cover's flower (same 874×1400 grid as the image) and show a letter when tapped */
+  .petals { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .petal-hit { cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; }
+  .petal-hit .zone { fill: transparent; }
+  .petal-hit:focus-visible .zone { stroke: var(--amarillo); stroke-width: 6; }
+  .petal-hit .hint { fill: #fff; transform-box: fill-box; transform-origin: center; animation: petal-hint 1.6s ease-in-out infinite; }
+  .petal-hit .letter {
+    fill: #fff; font: 700 54px "Helvetica Neue", Helvetica, Arial, sans-serif; opacity: 0;
+    transform-box: fill-box; transform-origin: center; transform: scale(.2);
+    transition: opacity .25s ease, transform .5s cubic-bezier(.2, 1.6, .4, 1);
+  }
+  .petal-hit .burst { fill: none; stroke: #fff; stroke-width: 5; opacity: 0; transform-box: fill-box; transform-origin: center; }
+  .petal-hit.shown { cursor: default; }
+  .petal-hit.shown .hint { display: none; }
+  .petal-hit.shown .letter { opacity: 1; transform: none; }
+  .petal-hit.shown .burst { animation: petal-burst .6s ease-out; }
+  @keyframes petal-hint { 0%, 100% { opacity: .15; transform: scale(.8); } 50% { opacity: .65; transform: scale(1.15); } }
+  @keyframes petal-burst { from { opacity: .9; transform: scale(.4); } to { opacity: 0; transform: scale(1.9); } }
 
   #lightbox { position: absolute; inset: 0; z-index: 20; background: rgba(35,26,21,.92); display: flex; align-items: center; justify-content: center; padding: 16px; }
   #lightbox img { max-width: 100%; max-height: 86%; border: 8px solid #fffdf7; box-shadow: 0 16px 40px rgba(0,0,0,.5); }
   #lightbox p { position: absolute; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; text-align: center; font-family: var(--display); font-size: 13px; color: var(--papel); }
 
   @media (prefers-reduced-motion: reduce) {
-    #tapnote, #super-wrap.ready .bar, #scrollcue { animation: none; }
+    #tapnote, #super-wrap.ready .bar, #scrollcue, .petal-hit .hint, .petal-hit.shown .burst { animation: none; }
+    .petal-hit .letter { transform: none; transition: opacity .2s ease; }
   }
 </style>
 </head>
@@ -297,10 +315,11 @@
       <div class="meterline">Cariñómetro: <b>∞ %</b> (måleren tålte ikke mer)</div>
     </article>
     <figure class="book">
-      <button type="button" id="book-open" aria-label="Vis omslaget «Vi er fem» i stort format">
-        <img src="img/vi-er-fem.png" width="874" height="1400" loading="lazy" alt="Bokomslag: Matias Pettersen, «Vi er fem». I midten en blomst med fem blader merket H, K, M, S og Å.">
-      </button>
-      <figcaption>Vi er fem, og du er en av oss.</figcaption>
+      <div class="book-cover">
+        <img src="img/vi-er-fem.png" width="874" height="1400" loading="lazy" alt="Bokomslag: Matias Pettersen, «Vi er fem». I midten en blomst med fem blader.">
+        <svg class="petals" id="petals" viewBox="0 0 874 1400" role="group" aria-label="Blomsten på omslaget. Trykk på bladene for å se bokstavene."></svg>
+      </div>
+      <figcaption id="book-note" aria-live="polite">Trykk på bladene</figcaption>
     </figure>
     <div class="finale-actions">
       <button class="btn ghost" id="sing-again">Spill sangen igjen</button>
@@ -1060,7 +1079,8 @@
     const f = $("finale"); f.hidden = false; f.scrollTop = 0;
     drawPicado($("picado2"));
     buildGallery();
-    sing();
+    resetPetals();
+    sing();   // opened straight from the #finale link there is no tap yet, so no sound: «Spill sangen igjen» starts it
     requestAnimationFrame(updateCue);
   }
   // The finale is taller than a phone: point out that the message and the photos are further down.
@@ -1100,7 +1120,71 @@
   }
   function openLightbox(src) { const lb = $("lightbox"); lb.querySelector("img").src = src; lb.hidden = false; }
   $("lightbox").addEventListener("click", () => { $("lightbox").hidden = true; });
-  $("book-open").addEventListener("click", () => openLightbox("img/vi-er-fem.png"));
+
+  // The flower on the «Vi er fem» cover: each petal shows its letter when tapped, one by one.
+  const petalsSvg = $("petals"), SVGNS = "http://www.w3.org/2000/svg";
+  const PETAL_LETTERS = ["H", "K", "M", "S", "Å"];   // clockwise from the top, as on the cover
+  const PETAL_NOTES = [72, 74, 76, 79, 81];           // marimba notes, one step up for each petal found
+  let petalsShown = 0;
+  function svgEl(tag, attrs) { const n = document.createElementNS(SVGNS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; }
+  function chime(midi, delay = 0) {
+    if (!audio.ctx || !audio.on) return;
+    initAudio();
+    const t = audio.ctx.currentTime + 0.01 + delay;
+    marimba(audio.ctx, audio.sfx, mtof(midi), t, 0.4);
+    marimba(audio.ctx, audio.sfx, mtof(midi + 12), t + 0.01, 0.08);
+  }
+  PETAL_LETTERS.forEach((ch, k) => {
+    // flower geometry from the cover: centre (439, 628), petal length 150, letter at 0.61 of it
+    const cx = 439, cy = 628, R = 150, th = -Math.PI / 2 + k * 2 * Math.PI / 5;
+    const lx = cx + Math.cos(th) * 0.61 * R, ly = cy + Math.sin(th) * 0.61 * R;
+    const a0 = th - Math.PI / 5, a1 = th + Math.PI / 5, rr = R * 1.12;   // a generous wedge to tap
+    const g = svgEl("g", { class: "petal-hit", tabindex: "0", role: "button", "aria-label": `Blad ${k + 1}` });
+    g.append(
+      svgEl("path", { class: "zone", d: `M${cx},${cy} L${cx + Math.cos(a0) * rr},${cy + Math.sin(a0) * rr} A${rr},${rr} 0 0 1 ${cx + Math.cos(a1) * rr},${cy + Math.sin(a1) * rr} Z` }),
+      svgEl("circle", { class: "hint", cx: lx, cy: ly, r: 9 }),
+      svgEl("circle", { class: "burst", cx: lx, cy: ly, r: 34 })
+    );
+    const letter = svgEl("text", { class: "letter", x: lx, y: ly + 19.5, "text-anchor": "middle" });
+    letter.textContent = ch; g.append(letter);
+    const reveal = () => {
+      if (g.classList.contains("shown")) return;
+      g.classList.add("shown"); g.setAttribute("aria-label", `Blad ${k + 1}: ${ch}`);
+      chime(PETAL_NOTES[petalsShown]);
+      petalsShown++;
+      if (petalsShown === PETAL_LETTERS.length) {
+        [72, 76, 79, 84].forEach((m, i) => chime(m, 0.35 + i * 0.13));
+        const note = $("book-note");
+        setTimeout(() => {
+          note.textContent = "Fem blader, én blomst.";
+          note.animate([{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }], { duration: 500, easing: "ease-out" });
+        }, 400);
+      }
+    };
+    g.addEventListener("click", reveal);
+    g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); reveal(); } });
+    petalsSvg.append(g);
+  });
+  function resetPetals() {
+    petalsShown = 0;
+    petalsSvg.querySelectorAll(".petal-hit").forEach((g, k) => { g.classList.remove("shown"); g.setAttribute("aria-label", `Blad ${k + 1}`); });
+    $("book-note").textContent = "Trykk på bladene";
+  }
+
+  // Hidden shortcuts to the finale: open the page with #finale, or tap «VS» on the poster five times quickly.
+  function jumpToFinale() {
+    if (state === "finale") return;
+    stopSong();
+    $("poster").hidden = true; $("announce").hidden = true;
+    showFinale();
+  }
+  let vsTaps = 0, vsTimer = null;
+  document.querySelector(".vs").addEventListener("click", () => {
+    vsTaps++; clearTimeout(vsTimer); vsTimer = setTimeout(() => { vsTaps = 0; }, 1500);
+    if (vsTaps >= 5) { vsTaps = 0; initAudio(); jumpToFinale(); }   // a real tap, so the song can play
+  });
+  const finaleFromLink = () => { if (location.hash === "#finale") jumpToFinale(); };
+  window.addEventListener("hashchange", finaleFromLink);
 
   $("start").addEventListener("click", (e) => { e.stopPropagation(); startIntro(); });
   $("play-again").addEventListener("click", () => { stopSong(); startIntro(); });
@@ -1301,6 +1385,7 @@
   titleLoop();
   // stop the poster loop once we leave it
   $("start").addEventListener("click", () => { state = state === "title" ? "intro" : state; });
+  finaleFromLink();
 })();
 </script>
 </body>
